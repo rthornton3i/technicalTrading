@@ -8,15 +8,20 @@ class Indicators:
     
     class MACD:
         
-        def __init__(self,tech):
+        def __init__(self,tech,avg=None):
             self.macdLine = [n[0] for n in tech]
             self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             
+            if avg is None:
+                self.avg = np.zeros((1,len(self.macdLine)))
+            else:
+                self.avg = avg
+            
         def buy(self,i):
             buyOpt = False
             
-            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
+            if self.macdLine[i-1] < self.avg[i-1] and self.signalLine[i-1] < self.avg[i-1]:
                 if self.macdLine[i-2] < self.signalLine[i-2] and self.macdLine[i-1] > self.signalLine[i-1]:
                     buyOpt = True
                     
@@ -25,7 +30,7 @@ class Indicators:
         def sell(self,i):
             sellOpt = False
             
-            if self.macdLine[i-1] > 0 and self.signalLine[i-1] > 0:
+            if self.macdLine[i-1] > self.avg[i-1] and self.signalLine[i-1] > self.avg[i-1]:
                 if self.macdLine[i-2] > self.signalLine[i-2] and self.macdLine[i-1] < self.signalLine[i-1]:
                     sellOpt = True
                     

@@ -21,10 +21,11 @@ class Backtest:
         self.tickers = ['SPY']
         # self.tickers = ['BLDR']#,'LYB']
         
-        self.startDate = pd.Timestamp(year=2020,month=3,day=23)
-        # self.startDate = pd.Timestamp(year=2006,month=1,day=1)
+        # self.startDate = pd.Timestamp(year=2020,month=3,day=23)
+        self.startDate = pd.Timestamp(year=2006,month=1,day=1)
         # self.startDate = pd.Timestamp(year=dt.now().year-3,month=dt.now().month,day=dt.now().day)
         self.endDate = pd.Timestamp(year=2012,month=1,day=1)
+        # self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
         
         self.initialFunds = 10000
         
@@ -55,7 +56,7 @@ class Backtest:
             
             if not fetchOpt:
                 data = pd.read_excel('data.xlsx',sheet_name=ticker,index_col=0)
-                data = data.loc[self.startDate:]#self.endDate]
+                data = data.loc[self.startDate:self.endDate]
             else:
                 data = Data[ticker]
             
@@ -104,11 +105,11 @@ class Backtest:
             # ax.plot(data['Close'],linewidth=0.5)
             # ax.plot(data['Smooth'],color='black',linewidth=1)
             
-            # data['SMA'] = Strategy.movingAverage(data['Close'],
-            #                                      window=20,
-            #                                      avgType='simple',
-            #                                      smoothDelta=3,
-            #                                      ax=indAxs[0:2],plotOpt=True)
+            data['SMA'] = Strategy.movingAverage(data['Close'],
+                                                  window=20,
+                                                  avgType='simple',
+                                                  smoothDelta=3,plotDelta=True,
+                                                  ax=indAxs[1],plotOpt=True)
             
             # Strategy.supportResistance(data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both',ax=ax,plotOpt=True)            
             # Strategy.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
@@ -127,9 +128,11 @@ class Backtest:
             ax = indAxs[2]
             Utility.setPlot(ax)
             data['MACD'] = Strategy.macd(data['Close'],
-                                         fast=7,slow=14,sig=5,
+                                         fast=11,slow=24,sig=8,
                                          avgType='simple',
                                          ax=ax,plotOpt=True)
+            
+            data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*data['MACD']))[0],index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
             
             ##################################################################
             ##################################################################
@@ -152,19 +155,48 @@ class Backtest:
             # data['MACD'] = Strategy.macd(data['Close'],fast=12,slow=26,sig=9,avgType='simple')
             # data['SMAe'] = Strategy.movingAverage(data['Close'],window=20,avgType='logarithmic',steepness=3)
             # data['RSI'] = Strategy.rsi(data['Close'],window=14,avgType='simple')
-                
+            
+            # x,y,z,v = [],[],[],[]
+            # for fast in range(2,13,2):
+            #     for slow in range(10,27,2):
+            #         if slow < fast:
+            #             continue
+                    
+            #         for sig in range(3,10):
+            #             data['MACD'] = Strategy.macd(data['Close'],
+            #                                           fast=fast,slow=slow,sig=sig,
+            #                                           avgType='simple')
+                        
+            #             data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*data['MACD']))[0],index=data.index.values))
+                        
+            #             self.stratFunds = self.strategy(data)
+                        
+            #             if self.stratFunds[-1][1] > maxValue:
+            #                 Funds[ticker] = self.stratFunds
+            #                 # Params[ticker] = (n)
+                            
+            #                 maxValue = Funds[ticker][-1][1]
+                            
+            #                 print('Fast:   ' + str(fast))
+            #                 print('Slow:   ' + str(slow))
+            #                 print('Signal: ' + str(sig))
+                            
+            #             x.append(fast)
+            #             y.append(slow)
+            #             z.append(self.stratFunds[-1][1])
+            #             v.append(sig)
+            
+            # _ = plt.figure()
+            # ax = plt.gca()
+            # ax = plt.axes(projection='3d')
+            # ax.scatter3D(x, y, z, c=v, cmap='viridis')
+                        
             self.stratFunds = self.strategy(data)
+
+# Plotting            
+            stratdates = [strat[0] for strat in self.stratFunds]
+            stratvalue = [strat[1] for strat in self.stratFunds]
             
-            if self.stratFunds[-1][1] > maxValue:
-                Funds[ticker] = self.stratFunds
-                # Params[ticker] = (n)
-                
-                maxValue = Funds[ticker][-1][1]
-            
-            stratdates = [strat[0] for strat in Funds[ticker]]
-            stratvalue = [strat[1] for strat in Funds[ticker]]
-            
-# Plotting
             ax = indAxs[0]
             ax.plot(nulldates,nullvalue)
             ax.plot(stratdates,stratvalue)
@@ -178,14 +210,14 @@ class Backtest:
     
     ###########################################################################
     def strategy(self,data):
-        '''Set buy/sell indicators'''
+# Set buy/sell indicators
         indicator = {}
         # indicator['BB'] = Indicators.BB(data['Close'],data['BB'])
-        indicator['MACD'] = Indicators.MACD(data['MACD'])
+        indicator['MACD'] = Indicators.MACD(data['MACD'],data['MACD_avg'])
         # indicator['SMA'] = Indicators.SMA(data['SMAe'])
         # indicator['ATR'] = Indicators.ATR(data)
         
-        '''Initiate orders'''
+# Initiate orders
         order = Orders(self.initialFunds)
         
         seekBuy = True
@@ -206,7 +238,7 @@ class Backtest:
                     sell = True
                     seekSell = False
                     
-                # if (data['Close'].iloc[i-1] - order.buyPrice) / order.buyPrice < -0.05:
+                # if (data['Close'].iloc[i-1] - order.buyPrice) / order.buyPrice < -0.03:
                 #     sell = True
                 #     seekSell = False
             
@@ -262,7 +294,7 @@ class Backtest:
         print('Null Funds:      $' + '{:,.0f}'.format(nullFunds[-1][1]))
         
         optFunds = optOrder.value
-        # print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
+        print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
         
         return [optFunds,nullFunds]
         

@@ -347,7 +347,7 @@ class Strategy:
         
         return pattern
     
-    def movingAverage(data,window=20,avgType='simple',steepness=3,smoothDelta=1,ignoreStart=True,outputAll=False,ax=None,plotOpt=False):
+    def movingAverage(data,window=20,avgType='simple',steepness=3,smoothDelta=1,ignoreStart=True,outputAll=False,plotDelta=False,ax=None,plotOpt=False):
         prices = data
         
         pattern = []
@@ -375,6 +375,8 @@ class Strategy:
             else:
                 pattern.append(meanPrice[-1])
         
+        deltaSmooth = pd.Series(Utility.smooth(deltaPrice,window=smoothDelta,trailing=True),index=data.index.values)
+        
         if plotOpt:
             if isinstance(ax,(np.ndarray,list)):
                 if len(ax) != 2:
@@ -385,13 +387,11 @@ class Strategy:
                 
                 ax1.plot(data.index.values,meanPrice,color='tab:orange',linewidth=1)
                 
-                # ax2.bar(data.index.values,avgSlope,color='tab:blue')
-                # ax2.set_ylabel('Slope',color='tab:blue') 
+                ax2.bar(data.index.values,avgSlope,color='tab:blue')
+                ax2.set_ylabel('Slope',color='tab:blue') 
                 
-                # ax2 = ax2.twinx()
+                ax2 = ax2.twinx()
                 ax2.set_ylabel('Price Delta',color='tab:orange')  
-                
-                deltaSmooth = pd.Series(Utility.smooth(deltaPrice,window=smoothDelta,trailing=True),index=data.index.values)
                 
                 ax2.plot(data.index.values,deltaSmooth,color='tab:orange',linewidth=1)
                 Strategy.avgPrice(deltaSmooth,colors='tab:blue',ax=ax2,plotDev=True,plotOpt=True)
@@ -399,8 +399,19 @@ class Strategy:
             else:
                 if ax == None:
                     ax = plt.gca()
+                
+                if not plotDelta:
+                    ax.plot(data.index.values,meanPrice,color='tab:orange',linewidth=1)
+                else:
+                    ax.bar(data.index.values,avgSlope,color='tab:blue')
+                    ax.set_ylabel('Slope',color='tab:blue') 
                     
-                ax.plot(data.index.values,meanPrice,color='tab:orange',linewidth=1)
+                    ax = ax.twinx()
+                    ax.set_ylabel('Price Delta',color='tab:orange')  
+                    
+                    ax.plot(data.index.values,deltaSmooth,color='tab:orange',linewidth=1)
+                    Strategy.avgPrice(deltaSmooth,colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
+                    # ax.axhline(color='k',linewidth=0.5)
                 
         return pattern
     
@@ -562,7 +573,7 @@ class Strategy:
             ax.plot(data.index.values,list(zip(*pattern))[1],color='tab:orange')
             ax.set_ylabel('Signal',color='tab:orange')
             
-            Strategy.avgPrice(pd.Series(macd,index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
+            # Strategy.avgPrice(pd.Series(macd,index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
             
         return pattern
     
