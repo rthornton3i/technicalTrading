@@ -562,6 +562,8 @@ class Strategy:
             ax.plot(data.index.values,list(zip(*pattern))[1],color='tab:orange')
             ax.set_ylabel('Signal',color='tab:orange')
             
+            Strategy.avgPrice(pd.Series(macd,index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
+            
         return pattern
     
     def accDist(data):

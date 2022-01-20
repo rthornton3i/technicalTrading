@@ -16,7 +16,7 @@ class Indicators:
         def buy(self,i):
             buyOpt = False
             
-            if self.macdLine[i-2] < 0 and self.signalLine[i-2] < 0:
+            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
                 if self.macdLine[i-2] < self.signalLine[i-2] and self.macdLine[i-1] > self.signalLine[i-1]:
                     buyOpt = True
                     
@@ -25,7 +25,7 @@ class Indicators:
         def sell(self,i):
             sellOpt = False
             
-            if self.macdLine[i-2] > 0 and self.signalLine[i-2] > 0:
+            if self.macdLine[i-1] > 0 and self.signalLine[i-1] > 0:
                 if self.macdLine[i-2] > self.signalLine[i-2] and self.macdLine[i-1] < self.signalLine[i-1]:
                     sellOpt = True
                     

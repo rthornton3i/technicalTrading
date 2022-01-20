@@ -29,7 +29,8 @@ class Backtest:
         self.initialFunds = 10000
         
         self.run(True,False)
-        
+    
+    ###########################################################################
     def run(self,fetchOpt,writeOpt):
         if fetchOpt:
             stockFetch = Fetch(self.tickers,self.startDate)
@@ -83,29 +84,31 @@ class Backtest:
             ###################################################################
             ###################################################################
             
-            '''Setup plots'''
+# Setup plots
             Figure = {}
             Figure['Indicator'], indAxs = plt.subplots(3,1,sharex=True,gridspec_kw={'height_ratios': [2,1,1]})
-            Figure['Value'], valAxs = plt.subplots()
+            # Figure['Value'], valAxs = plt.subplots()
             
-            valAxs.set_yscale('log')
-            valAxs.grid()
-            valAxs.grid(axis='x',linestyle='--')
+            # Utility.setPlot(valAxs,logscale=False,xlimits=[data.index.values[0],data.index.values[-1]])
+            
+            # valAxs.set_yscale('log')
+            # valAxs.grid()
+            # valAxs.grid(axis='x',linestyle='--')
             
             ###################################################################
             
-            '''PLOT 1'''
+            # PLOT 1
             ax = indAxs[0]
             Utility.setPlot(ax,logscale=False,xlimits=[data.index.values[0],data.index.values[-1]])
             
-            ax.plot(data['Close'],linewidth=0.5)
+            # ax.plot(data['Close'],linewidth=0.5)
             # ax.plot(data['Smooth'],color='black',linewidth=1)
             
-            data['SMA'] = Strategy.movingAverage(data['Close'],
-                                                 window=20,
-                                                 avgType='simple',
-                                                 smoothDelta=3,
-                                                 ax=indAxs[0:2],plotOpt=True)
+            # data['SMA'] = Strategy.movingAverage(data['Close'],
+            #                                      window=20,
+            #                                      avgType='simple',
+            #                                      smoothDelta=3,
+            #                                      ax=indAxs[0:2],plotOpt=True)
             
             # Strategy.supportResistance(data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both',ax=ax,plotOpt=True)            
             # Strategy.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
@@ -114,17 +117,17 @@ class Backtest:
             
             ##################################################################
             
-            '''PLOT 2'''
+            # PLOT 2
             ax = indAxs[1]
             Utility.setPlot(ax)
             
             ##################################################################
             
-            '''PLOT 3'''
+            # PLOT 3
             ax = indAxs[2]
             Utility.setPlot(ax)
             data['MACD'] = Strategy.macd(data['Close'],
-                                         fast=5,slow=10,sig=7,
+                                         fast=7,slow=14,sig=5,
                                          avgType='simple',
                                          ax=ax,plotOpt=True)
             
@@ -133,22 +136,22 @@ class Backtest:
             
             Data[ticker] = data
             
-            '''Null and Optimized funds'''
+# Null and Optimized funds
             [self.optFunds,self.nullFunds] = self.compare(data)
             
             nulldates = [null[0] for null in self.nullFunds]
             nullvalue = [null[1] for null in self.nullFunds]
             nullreg   = Strategy.regression(pd.Series(nullvalue,index=nulldates),curveType='logarithmic')
             
-            '''Strategy funds'''
+# Strategy funds
             maxValue = 0
             Funds[ticker] = None
             Params[ticker] = None
             
-            data['BB'] = Strategy.bollingerBands(data['Close'],window=20,avgType='logarithmic')
-            data['MACD'] = Strategy.macd(data['Close'],fast=12,slow=26,sig=9,avgType='simple')
-            data['SMAe'] = Strategy.movingAverage(data['Close'],window=20,avgType='logarithmic',steepness=3)
-            data['RSI'] = Strategy.rsi(data['Close'],window=14,avgType='simple')
+            # data['BB'] = Strategy.bollingerBands(data['Close'],window=20,avgType='logarithmic')
+            # data['MACD'] = Strategy.macd(data['Close'],fast=12,slow=26,sig=9,avgType='simple')
+            # data['SMAe'] = Strategy.movingAverage(data['Close'],window=20,avgType='logarithmic',steepness=3)
+            # data['RSI'] = Strategy.rsi(data['Close'],window=14,avgType='simple')
                 
             self.stratFunds = self.strategy(data)
             
@@ -161,11 +164,10 @@ class Backtest:
             stratdates = [strat[0] for strat in Funds[ticker]]
             stratvalue = [strat[1] for strat in Funds[ticker]]
             
-            '''Plotting'''
-            valAxs.plot(nulldates,nullvalue)
-            valAxs.plot(nulldates,nullreg)
-                
-            valAxs.plot(stratdates,stratvalue)
+# Plotting
+            ax = indAxs[0]
+            ax.plot(nulldates,nullvalue)
+            ax.plot(stratdates,stratvalue)
             
             f += 1
                         
@@ -174,13 +176,14 @@ class Backtest:
         self.Funds = Funds
         self.Figure = Figure
     
+    ###########################################################################
     def strategy(self,data):
         '''Set buy/sell indicators'''
         indicator = {}
-        indicator['BB'] = Indicators.BB(data['Close'],data['BB'])
+        # indicator['BB'] = Indicators.BB(data['Close'],data['BB'])
         indicator['MACD'] = Indicators.MACD(data['MACD'])
-        indicator['SMA'] = Indicators.SMA(data['SMAe'])
-        indicator['ATR'] = Indicators.ATR(data)
+        # indicator['SMA'] = Indicators.SMA(data['SMAe'])
+        # indicator['ATR'] = Indicators.ATR(data)
         
         '''Initiate orders'''
         order = Orders(self.initialFunds)
@@ -227,6 +230,7 @@ class Backtest:
         
         return stratFunds
     
+    ###########################################################################
     def compare(self,data):
         prices = data['Smooth']
         
