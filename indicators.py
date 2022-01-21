@@ -22,7 +22,7 @@ class Indicators:
             buyOpt = False
             
             if self.macdLine[i-1] < self.avg[i-1] and self.signalLine[i-1] < self.avg[i-1]:
-                if self.macdLine[i-2] < self.signalLine[i-2] and self.macdLine[i-1] > self.signalLine[i-1]:
+                if self.diff[i-2] < 0 and self.diff[i-1] > 0:
                     buyOpt = True
                     
             return buyOpt
@@ -31,21 +31,24 @@ class Indicators:
             sellOpt = False
             
             if self.macdLine[i-1] > self.avg[i-1] and self.signalLine[i-1] > self.avg[i-1]:
-                if self.macdLine[i-2] > self.signalLine[i-2] and self.macdLine[i-1] < self.signalLine[i-1]:
+                if self.diff[i-2] > 0 and self.diff[i-1] < 0:
                     sellOpt = True
                     
             return sellOpt
         
     class MACD_Delta:
         
-        def __init__(self,data):
-            tech = Strategy.macd(data,fast=5,slow=10,sig=7,avgType='simple')
-            
+        def __init__(self,tech,delay=1,avg=None):
             self.macdLine = [n[0] for n in tech]
             self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             
-            self.backdays = 3
+            self.delay = delay
+            
+            if avg is None:
+                self.avg = np.zeros((1,len(self.macdLine)))
+            else:
+                self.avg = avg
             
         def buy(self,i):
             buyOpt = False
@@ -53,14 +56,14 @@ class Indicators:
             if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
                 return buyOpt
         
-            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
-                if self.diff[i-1] < 0:
-                    for n in range(self.backdays,1,-1):
-                        if abs(self.diff[i-n-1]) < abs(self.diff[i-n]):
-                            buyOpt = True
-                        else:
-                            buyOpt = False
-                            break
+            if self.macdLine[i-1] < self.avg[i-1] and self.signalLine[i-1] < self.avg[i-1]:
+                for n in range(1,self.delay+1):
+                    if abs(self.diff[i-n]) < abs(self.diff[i-n-1]):
+                        continue
+                    else:
+                        return buyOpt
+                    
+                buyOpt = True
                     
             return buyOpt
         
@@ -70,14 +73,14 @@ class Indicators:
             if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
                 return sellOpt
             
-            if self.macdLine[i-1] > 0 and self.signalLine[i-1] > 0:
-                if self.diff[i-1] > 0:
-                    for n in range(self.backdays,1,-1):
-                        if abs(self.diff[i-n-1]) < abs(self.diff[i-n]):
-                            sellOpt = True
-                        else:
-                            sellOpt = False
-                            break
+            if self.macdLine[i-1] > self.avg[i-1] and self.signalLine[i-1] > self.avg[i-1]:
+                for n in range(1,self.delay+1):
+                    if abs(self.diff[i-n]) < abs(self.diff[i-n-1]):
+                        continue
+                    else:
+                        return sellOpt
+                    
+                sellOpt = True
                     
             return sellOpt
     
