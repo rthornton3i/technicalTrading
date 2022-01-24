@@ -10,11 +10,7 @@ class Orders:
         self.buyPrice = 0
         self.sellPrice = 0
         
-        self.info = {}
-        
-        self.info['numBuys'] = 0
-        self.info['numSells'] = 0
-        self.info['earnings'] = []
+        self.info = Info()
         
     def buy(self,buyPrice,date):
         self.buyPrice = buyPrice
@@ -23,7 +19,7 @@ class Orders:
         self.cash -= self.shares * self.buyPrice
         self.value.append((date,self.cash + (self.shares * buyPrice)))
         
-        self.info['numBuys'] += 1
+        self.info.numBuys += 1
     
     def sell(self,sellPrice,date):
         self.sellPrice = sellPrice
@@ -32,8 +28,8 @@ class Orders:
         self.shares = 0
         self.value.append((date,self.cash))
         
-        self.info['numSells'] += 1
-        self.info['earnings'].append((self.sellPrice - self.buyPrice) / self.buyPrice)
+        self.info.numSells += 1
+        self.info.earnings.append((self.sellPrice - self.buyPrice) / self.buyPrice)
         
     def hold(self,curPrice,date):
         self.value.append((date,self.cash + (self.shares * curPrice)))
@@ -47,3 +43,10 @@ class Orders:
     
     def maxDrawdown(self):
         maxdrawdown = 0
+        
+class Info:
+    
+    def __init__(self):
+        self.numBuys = 0
+        self.numSells = 0
+        self.earnings = []

@@ -5,7 +5,7 @@ from orders import Orders
 from indicators import Indicators
 
 # from Classes.Inputs import Inputs
-# from Classes.Outputs import Outputs
+from Classes.Outputs import Outputs
 
 import numpy as np
 import pandas as pd
@@ -102,6 +102,8 @@ class Backtest:
             valAxs.grid()
             valAxs.grid(axis='x',linestyle='--')
             
+            info = Info()
+            
             ###################################################################
             
             # PLOT 1
@@ -138,7 +140,7 @@ class Backtest:
                                          ax=ax,plotOpt=True)
             
             data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*data['MACD']))[0],index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
-            info['delay'] = 5
+            info.delay = 5
             
             ##################################################################
             ##################################################################
@@ -161,8 +163,8 @@ class Backtest:
             
             ###################################################################
             df = pd.read_excel('MACD_test.xlsx',index_col=0)
-            df2 = df[df['f']>40000]#self.nullFunds]
-            df2 = df2.iloc[:10]
+            df2 = df[df['f']>nullvalue[-1]]
+        
             # self.outputs = self.exploration(data, info, avgType=df2['a'], fast=df2['x'], slow=df2['y'], sig=df2['z'], delay=df2['d'])
             
             # outputs = self.outputs
@@ -185,42 +187,45 @@ class Backtest:
             # inputs = inputs[:100]
             
             ############
-            tic = time()
-            self.allResults = self.exploration(data,info,avgType=df2.a,
-                                                          fast=df2.x,
-                                                          slow=df2.y,
-                                                          sig=df2.z,
-                                                          delay=df2.d)
+            # tic = time()
+            # self.allResults = self.exploration(data,avgType=df2.a.tolist(),
+            #                                         fast=df2.x.tolist(),
+            #                                         slow=df2.y.tolist(),
+            #                                         sig=df2.z.tolist(),
+            #                                         delay=df2.d.tolist())
             
             ############
-            # tic = time()
-            # with Pool(processes=mp.cpu_count()) as pool:
-            #     results = []
-            #     for i in range(len(df2)):
-            #         keywords = {'avgType':[.iloc[i]],
-            #                     'fast':[df2.x.iloc[i]],
-            #                     'slow':[df2.y.iloc[i]],
-            #                     'sig':[df2.z.iloc[i]],
-            #                     'delay':[df2.d.iloc[i]]}
-                    
-            #         results.append(pool.apply_async(self.exploration, args=(data,info), kwds=keywords))
-           
-            #     pool.close()
-            #     pool.join() 
+            tic = time()
+            with Pool(processes=mp.cpu_count()) as pool:
+                results = []
+                stepSize = int(np.ceil(len(df2) / mp.cpu_count()))
+                for n in range(0,len(df2),stepSize):
+                    if n > len(df2) - stepSize:
+                        ins = df2.iloc[n:]
+                    else:
+                        ins = df2.iloc[n:n+stepSize]    
                 
-            # print('waiting')
-            # [result.wait() for result in results]
-            # print('getting')
-            # self.allResults = [r.get() for r in results]
+                
+                    keywords = {'avgType':ins.a.tolist(),
+                                'fast':ins.x.tolist(),
+                                'slow':ins.y.tolist(),
+                                'sig':ins.z.tolist(),
+                                'delay':ins.d.tolist()}
+                    
+                    results.append(pool.apply_async(self.exploration, args=(data,), kwds=keywords))
+               
+                pool.close()
+                pool.join() 
+                
+            [result.wait() for result in results]
+            self.allResults = [r.get() for r in results]
             
             toc = time() - tic
-            print('Multi-core time: ' + str(toc))
+            print('Runtime: ' + str(toc))
             
-            # outputs = self.outputs
-            # del outputs['maxFunds']
-            
-            # outputDf = pd.DataFrame.from_dict(outputs)
-            # outputDf.to_excel("MACD_test.xlsx")
+            outputs = self.allResults
+            self.outputDf = Utility.nmspc2df(outputs)   
+            self.outputDf.to_excel("MACD_test2.xlsx")
 
 # Plotting                
             # fig = plt.figure()
@@ -250,8 +255,9 @@ class Backtest:
         # self.Figure = Figure
 
     ###########################################################################        
-    def exploration(self,data,info,**kwargs): 
+    def exploration(self,data,info=None,**kwargs): 
         outputs = Outputs()
+        info = Info()
         for avgType,fast,slow,sig,delay in zip(kwargs['avgType'],kwargs['fast'],kwargs['slow'],kwargs['sig'],kwargs['delay']):
             
             data['MACD'] = Strategy.macd(data['Close'],
@@ -260,7 +266,7 @@ class Backtest:
             
             data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*data['MACD']))[0],index=data.index.values))
     
-            info['delay'] = delay
+            info.delay = delay
             
             order = self.strategy(data,info)
             stratFunds = order.value
@@ -270,9 +276,9 @@ class Backtest:
             outputs.sig.append(sig)
             outputs.delay.append(delay)
             outputs.avgType.append(avgType)
-            outputs.numBuy.append(order.info['numBuys'])
-            outputs.numSell.append(order.info['numSells'])
-            outputs.avgEarn.append(np.mean(order.info['earnings']))
+            outputs.numBuy.append(order.info.numBuys)
+            outputs.numSell.append(order.info.numSells)
+            outputs.avgEarn.append(np.mean(order.info.earnings))
             outputs.value.append(stratFunds[-1][1])
                                 
         return outputs
@@ -283,7 +289,7 @@ class Backtest:
         indicator = {}
         # indicator['BB'] = Indicators.BB(data['Close'],data['BB'])
         # indicator['MACD'] = Indicators.MACD(data['MACD'],data['MACD_avg'])
-        indicator['MACD'] = Indicators.MACD_Delta(data['MACD'],delay=info['delay'],avg=data['MACD_avg'])
+        indicator['MACD'] = Indicators.MACD_Delta(data['MACD'],delay=info.delay,avg=data['MACD_avg'])
         # indicator['SMA'] = Indicators.SMA(data['SMAe'])
         # indicator['ATR'] = Indicators.ATR(data)
         
@@ -367,6 +373,7 @@ class Backtest:
         # print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
         
         return [optFunds,nullFunds]
+
     
 class Inputs:
     
@@ -377,26 +384,16 @@ class Inputs:
         self.sig = []
         self.delay = []
         
-class Outputs:
+class Info:
     
     def __init__(self):
-        self.avgType = []
-        self.fast = []
-        self.slow = []
-        self.sig = []
         self.delay = []
-        
-        self.value = []
-        
-        self.numBuy = []
-        self.numSell = []
-        self.avgEarn = []        
         
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     backtest = Backtest()
     data = backtest.Data
-    outputs = backtest.allResults
+    outputs = backtest.outputDf
     
     # optFunds = backtest.optFunds
     # nullFunds = backtest.nullFunds

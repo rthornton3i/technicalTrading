@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 
@@ -104,3 +105,25 @@ class Utility:
         ax.grid(axis='x',linestyle='--')
         
         ax.tick_params(axis='x',labelrotation=45)
+        
+    def nmspc2df(nmspc):
+        def createDf(ns):
+            tempDf = pd.DataFrame()
+            
+            for attr in dir(ns):
+                if not callable(getattr(ns, attr)) and not attr.startswith("__"):
+                    tempDf[attr] = getattr(ns,attr)
+            
+            return tempDf
+
+        if isinstance(nmspc,list):
+            for i,ns in enumerate(nmspc):
+                if i == 0:
+                    df = createDf(ns)
+                else:
+                    tempDf = createDf(ns)
+                    df = df.append(tempDf,ignore_index=True)
+        else:
+            df = createDf(nmspc)
+                
+        return df
