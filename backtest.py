@@ -4,6 +4,9 @@ from utility import Utility
 from orders import Orders
 from indicators import Indicators
 
+# from Classes.Inputs import Inputs
+# from Classes.Outputs import Outputs
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,16 +15,15 @@ from datetime import datetime as dt
 from time import time
 import math
 
-# import multiprocessing as mp
-# from multiprocessing.pool import Pool
+import multiprocessing as mp
+from multiprocessing import Pool
 
 import warnings
         
 class Backtest:
     
     def __init__(self):
-        self.tickers = ['SPY']
-        # self.tickers = ['BLDR']#,'LYB']
+        self.tickers = ['SPY']#,'QQQ','DIA']
         
         # self.startDate = pd.Timestamp(year=2020,month=3,day=23)
         self.startDate = pd.Timestamp(year=2006,month=1,day=1)
@@ -126,12 +128,12 @@ class Backtest:
             Utility.setPlot(ax)
             
             ##################################################################
-            
+
             # PLOT 3
             ax = indAxs[2]
             Utility.setPlot(ax)
             data['MACD'] = Strategy.macd(data['Close'],
-                                         fast=2,slow=15,sig=4,
+                                         fast=13,slow=16,sig=6,
                                          avgType='logarithmic',
                                          ax=ax,plotOpt=True)
             
@@ -151,27 +153,74 @@ class Backtest:
             Funds[ticker] = None
             Params[ticker] = None
             
-            # self.stratFunds = self.strategy(data,info)
+            ###################################################################
+            # order = self.strategy(data,info)
             
-            inputs = []
-            for avgType in ['simple','exponential','logarithmic']:
-                for fast in range(2,15):
-                    for slow in range(5,30):
-                        if slow < fast:
-                            continue
+            # stratFunds = order.value
+            # info = order.info
+            
+            ###################################################################
+            df = pd.read_excel('MACD_test.xlsx',index_col=0)
+            df2 = df[df['f']>40000]#self.nullFunds]
+            df2 = df2.iloc[:10]
+            # self.outputs = self.exploration(data, info, avgType=df2['a'], fast=df2['x'], slow=df2['y'], sig=df2['z'], delay=df2['d'])
+            
+            # outputs = self.outputs
+            
+            # outputDf = pd.DataFrame.from_dict(outputs)
+            # outputDf.to_excel("MACD_test2.xlsx")
+            
+            ###################################################################
+            # inputs = []
+            # for avgType in ['simple','exponential','logarithmic']:
+            #     for fast in range(2,15):
+            #         for slow in range(5,30):
+            #             if slow < fast:
+            #                 continue
                         
-                        for sig in range(3,15):
-                            inputs.append((avgType,fast,slow,sig))
+            #             for sig in range(3,15):
+            #                 for delay in range(1,10):
+            #                     inputs.append((avgType,fast,slow,sig,delay))
 
-            inputs = inputs[:5]
-            inputs = list(zip(*inputs))
-            self.outputs = self.exploration(data,info,avgType=inputs[0],fast=inputs[1],slow=inputs[2],sig=inputs[3])
+            # inputs = inputs[:100]
             
-            outputs = self.outputs
-            del outputs['maxFunds']
+            ############
+            tic = time()
+            self.allResults = self.exploration(data,info,avgType=df2.a,
+                                                          fast=df2.x,
+                                                          slow=df2.y,
+                                                          sig=df2.z,
+                                                          delay=df2.d)
             
-            outputDf = pd.DataFrame.from_dict(outputs)
-            outputDf.to_excel("MACD_test.xlsx")
+            ############
+            # tic = time()
+            # with Pool(processes=mp.cpu_count()) as pool:
+            #     results = []
+            #     for i in range(len(df2)):
+            #         keywords = {'avgType':[.iloc[i]],
+            #                     'fast':[df2.x.iloc[i]],
+            #                     'slow':[df2.y.iloc[i]],
+            #                     'sig':[df2.z.iloc[i]],
+            #                     'delay':[df2.d.iloc[i]]}
+                    
+            #         results.append(pool.apply_async(self.exploration, args=(data,info), kwds=keywords))
+           
+            #     pool.close()
+            #     pool.join() 
+                
+            # print('waiting')
+            # [result.wait() for result in results]
+            # print('getting')
+            # self.allResults = [r.get() for r in results]
+            
+            toc = time() - tic
+            print('Multi-core time: ' + str(toc))
+            
+            # outputs = self.outputs
+            # del outputs['maxFunds']
+            
+            # outputDf = pd.DataFrame.from_dict(outputs)
+            # outputDf.to_excel("MACD_test.xlsx")
 
 # Plotting                
             # fig = plt.figure()
@@ -186,8 +235,8 @@ class Backtest:
             # cb = fig.colorbar(scatter,ax=ax)
             # cb.set_label('signal')
         
-            # stratdates = [strat[0] for strat in self.outputs['maxFunds']]
-            # stratvalue = [strat[1] for strat in self.outputs['maxFunds']]
+            # stratdates = [strat[0] for strat in stratFunds]
+            # stratvalue = [strat[1] for strat in stratFunds]
             
             # ax = valAxs
             # ax.plot(nulldates,nullvalue)
@@ -202,53 +251,29 @@ class Backtest:
 
     ###########################################################################        
     def exploration(self,data,info,**kwargs): 
-        avgType = kwargs['avgType']
-        fast = kwargs['fast']
-        slow = kwargs['slow']
-        sig = kwargs['sig']
-        
-        outputs = {}
-        x,y,z,d,a,f = [],[],[],[],[],[]
-        
-        maxValue = 0
-        for avgType,fast,slow,sig in zip(kwargs['avgType'],kwargs['fast'],kwargs['slow'],kwargs['sig']):
+        outputs = Outputs()
+        for avgType,fast,slow,sig,delay in zip(kwargs['avgType'],kwargs['fast'],kwargs['slow'],kwargs['sig'],kwargs['delay']):
             
             data['MACD'] = Strategy.macd(data['Close'],
                                          fast=fast,slow=slow,sig=sig,
                                          avgType=avgType)
             
             data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*data['MACD']))[0],index=data.index.values))
+    
+            info['delay'] = delay
             
-            
-            for delay in range(1,10):
-                info['delay'] = delay
-                self.stratFunds = self.strategy(data,info)
-                
-                if self.stratFunds[-1][1] > maxValue:                
-                    maxValue = self.stratFunds[-1][1]
-                    maxFunds = self.stratFunds
-                    
-                    # print('Strategy Funds:  $' + '{:,.0f}'.format(self.stratFunds[-1][1]))
-                    # print('Fast:   ' + str(fast))
-                    # print('Slow:   ' + str(slow))
-                    # print('Signal: ' + str(sig))
-                    # print('Delay:  ' + str(delay))
-                    # print('Avg:    ' + str(avgType))
-                    
-                x.append(fast)
-                y.append(slow)
-                z.append(sig)
-                d.append(delay)
-                a.append(avgType)
-                f.append(self.stratFunds[-1][1])
-            
-        outputs['x'] = x
-        outputs['y'] = y
-        outputs['z'] = z
-        outputs['d'] = d
-        outputs['a'] = a
-        outputs['f'] = f
-        outputs['maxFunds'] = maxFunds
+            order = self.strategy(data,info)
+            stratFunds = order.value
+        
+            outputs.fast.append(fast)
+            outputs.slow.append(slow)
+            outputs.sig.append(sig)
+            outputs.delay.append(delay)
+            outputs.avgType.append(avgType)
+            outputs.numBuy.append(order.info['numBuys'])
+            outputs.numSell.append(order.info['numSells'])
+            outputs.avgEarn.append(np.mean(order.info['earnings']))
+            outputs.value.append(stratFunds[-1][1])
                                 
         return outputs
     
@@ -305,7 +330,7 @@ class Backtest:
         stratFunds = order.value
         print('Strategy Funds:  $' + '{:,.0f}'.format(stratFunds[-1][1]))
         
-        return stratFunds
+        return order
     
     ###########################################################################
     def compare(self,data):
@@ -339,15 +364,39 @@ class Backtest:
         print('Null Funds:      $' + '{:,.0f}'.format(nullFunds[-1][1]))
         
         optFunds = optOrder.value
-        print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
+        # print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
         
         return [optFunds,nullFunds]
-
+    
+class Inputs:
+    
+    def __init__(self):
+        self.avgType = []
+        self.fast = []
+        self.slow = []
+        self.sig = []
+        self.delay = []
+        
+class Outputs:
+    
+    def __init__(self):
+        self.avgType = []
+        self.fast = []
+        self.slow = []
+        self.sig = []
+        self.delay = []
+        
+        self.value = []
+        
+        self.numBuy = []
+        self.numSell = []
+        self.avgEarn = []        
+        
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     backtest = Backtest()
     data = backtest.Data
-    outputs = backtest.outputs
+    outputs = backtest.allResults
     
     # optFunds = backtest.optFunds
     # nullFunds = backtest.nullFunds
