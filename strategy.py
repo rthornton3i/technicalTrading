@@ -347,7 +347,7 @@ class Strategy:
         
         return pattern
     
-    def movingAverage(data,window=20,avgType='simple',steepness=3,ignoreStart=True,outputAll=False,plotDelta=False,ax=None,plotOpt=False):
+    def movingAverage(data,window=20,avgType='simple',steepness=3,ignoreStart=True,outputAll=False,colors=None,plotDelta=False,ax=None,plotOpt=False):
         prices = data
         
         pattern = []
@@ -382,35 +382,44 @@ class Strategy:
                 if len(ax) != 2:
                     raise Exception('ERROR: Invalid number of axes provided.')
                 
+                if colors == None or len(colors) != 2:
+                    colors = ('tab:orange','tab:blue')
+                    
                 ax1 = ax[0]
                 ax2 = ax[1]
                 
-                ax1.plot(data.index.values,meanPrice,color='tab:orange',linewidth=1)
+                ax1.plot(data.index.values,meanPrice,color=colors[0],linewidth=1)
                 
-                ax2.bar(data.index.values,avgSlope,color='tab:blue')
-                ax2.set_ylabel('Slope',color='tab:blue') 
+                ax2.bar(data.index.values,avgSlope,color=colors[1])
+                ax2.set_ylabel('Slope',color=colors[1]) 
                 
                 ax2 = ax2.twinx()
-                ax2.set_ylabel('Price Delta',color='tab:orange')  
+                ax2.set_ylabel('Price Delta',color=colors[0])  
                 
-                ax2.plot(data.index.values,deltaPrice,color='tab:orange',linewidth=1)
-                Strategy.avgPrice(deltaPrice,colors='tab:blue',ax=ax2,plotDev=True,plotOpt=True)
+                ax2.plot(data.index.values,deltaPrice,color=colors[0],linewidth=1)
+                Strategy.avgPrice(deltaPrice,colors=colors[0],ax=ax2,plotDev=True,plotOpt=True)
                 # ax2.axhline(color='k',linewidth=0.5)
             else:
                 if ax == None:
                     ax = plt.gca()
                 
                 if not plotDelta:
-                    ax.plot(data.index.values,meanPrice,color='tab:orange',linewidth=1)
+                    if colors == None:
+                        colors = 'tab:orange'
+                        
+                    ax.plot(data.index.values,meanPrice,color=colors,linewidth=1)
                 else:
-                    ax.bar(data.index.values,avgSlope,color='tab:blue')
-                    ax.set_ylabel('Slope',color='tab:blue') 
+                    if colors == None or len(colors) != 2:
+                        colors = ('tab:orange','tab:blue')
+                        
+                    ax.bar(data.index.values,avgSlope,color=colors[0])
+                    ax.set_ylabel('Slope',color=colors[0]) 
                     
                     ax = ax.twinx()
-                    ax.set_ylabel('Price Delta',color='tab:orange')  
+                    ax.set_ylabel('Price Delta',color=colors[1])  
                     
-                    ax.plot(data.index.values,deltaPrice,color='tab:orange',linewidth=1)
-                    Strategy.avgPrice(deltaPrice,colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
+                    ax.plot(data.index.values,deltaPrice,color=colors[1],linewidth=1)
+                    Strategy.avgPrice(deltaPrice,colors=colors[0],ax=ax,plotDev=True,plotOpt=True)
                     # ax.axhline(color='k',linewidth=0.5)
                 
         return pattern

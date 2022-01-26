@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 class Orders:
     
@@ -35,18 +36,50 @@ class Orders:
         self.value.append((date,self.cash + (self.shares * curPrice)))
         
     def analyze(self):
-        self.winLossRate()
-        self.maxDrawdown()
-    
-    def winLossRate(self):
-        pass
+        self.info.avgEarn = np.mean(self.info.earnings)
+        # self.info.drawdown = self.maxDrawdown()
+        # self.info.winLoss = self.winLossRate()
     
     def maxDrawdown(self):
-        maxdrawdown = 0
+        localMax = 0
+        localMin = 0
+        drawdown = 0
+        
+        for _,val in self.value:
+            if val > localMax:
+                localMax = val
+                localMin = val
+                
+            if val < localMin:
+                localMin = val
+                
+            if localMax - localMin > drawdown:
+                drawdown = localMax - localMin
+    
+        return drawdown
+    
+    def winLossRate(self):
+        wins = 0
+        losses = 0
+        for earn in self.info.earnings:
+            if earn > 0:
+                wins += 1
+            else:
+                losses += 1
+                
+        winLoss = wins / losses
+        
+        return winLoss
         
 class Info:
     
     def __init__(self):
         self.numBuys = 0
         self.numSells = 0
+        
         self.earnings = []
+        self.avgEarn = []
+        
+        self.drawdown = []
+        self.winLoss = []
+        

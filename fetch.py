@@ -2,6 +2,10 @@ from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 from alpha_vantage.fundamentaldata import FundamentalData
 
+# from datapackage import Package
+
+# package = Package('https://datahub.io/core/finance-vix/datapackage.json')
+
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt

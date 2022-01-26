@@ -127,3 +127,15 @@ class Utility:
             df = createDf(nmspc)
                 
         return df
+    
+    def dicts2df(dicts):
+        if isinstance(dicts,list):
+            for i,dic in enumerate(dicts):
+                if i == 0:
+                    df = pd.DataFrame.from_dict(dic)
+                else:
+                    df = df.append(pd.DataFrame.from_dict(dic))
+        else:
+            df = pd.DataFrame.from_dict(dicts)
+            
+        return df

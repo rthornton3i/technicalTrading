@@ -84,6 +84,51 @@ class Indicators:
                     
             return sellOpt
     
+    class SMA_Delta:
+        
+        def __init__(self,slow,fast,diff,info):
+            self.slow = {}
+            self.fast = {}
+            
+            tech = list(zip(*slow))
+            self.slow['tech'] = tech[0]
+            self.slow['delta'] = tech[1]
+            self.slow['slope'] = tech[2]
+            
+            tech = list(zip(*fast))
+            self.fast['tech'] = tech[0]
+            self.fast['delta'] = tech[1]
+            self.fast['slope'] = tech[2]
+            
+            self.diff = diff
+            self.avg = info['avg']
+            self.std = info['std']
+            
+            self.inStd = False
+            
+        def buy(self,i):
+            buyOpt = True
+            
+            # fastBelowSlow = self.fast['tech'][i-1] < self.slow['tech'][i-1]
+            # fastDownward = self.fast['slope'][i-1] < 0
+            
+            # if not fastBelowSlow and not fastDownward:
+            #     buyOpt = True
+                
+            if self.diff[i-1] > self.avg - self.std:
+                self.inStd = True
+                    
+            return buyOpt
+        
+        def sell(self,i):
+            sellOpt = False
+            
+            if self.diff[i-1] < self.avg - self.std and self.inStd:
+                sellOpt = True
+                self.inStd = False
+                    
+            return sellOpt
+        
     class MACD_DeltaMod:
         
         def __init__(self,data):
@@ -147,7 +192,10 @@ class Indicators:
     class SMA:
         
         def __init__(self,tech):
-            self.tech = tech
+            tech = list(zip(*tech))
+            self.tech = tech[0]
+            self.delta = tech[1]
+            self.slope = tech[2]
             
         def buy(self,i):
             buyOpt = False
