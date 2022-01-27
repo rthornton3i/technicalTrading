@@ -3,6 +3,7 @@ from strategy import Strategy
 from utility import Utility
 from orders import Orders
 from indicators import Indicators
+# from analyze import Analyze
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,11 @@ class Backtest:
         
         self.run(True,False)
     
+    ###########################################################################
+    def test(self):
+        stockFetch = Fetch(self.tickers,self.startDate)
+        self.Data = stockFetch.getPrices()
+        
     ###########################################################################
     def run(self,fetchOpt,writeOpt):            
         if fetchOpt:
@@ -96,14 +102,14 @@ class Backtest:
 # Setup plots
             Figure = {}
             Figure['Indicator'], indAxs = plt.subplots(3,1,sharex=True,gridspec_kw={'height_ratios': [2,1,1]})
-            Figure['Value'], valAxs = plt.subplots()
+            Figure['Value'], valAxs = plt.subplots(3,1,sharex=True,gridspec_kw={'height_ratios': [2,1,1]})
             
-            Utility.setPlot(valAxs,logscale=False,xlimits=[self.data.index.values[0],self.data.index.values[-1]])
+            Utility.setPlot(valAxs[0],logscale=False,xlimits=[self.data.index.values[0],self.data.index.values[-1]])
+            valAxs[0].set_yscale('log')
             
-            valAxs.set_yscale('log')
-            valAxs.grid()
-            valAxs.grid(axis='x',linestyle='--')
-            
+            for ax in valAxs:
+                ax.grid()
+                ax.grid(axis='x',linestyle='--')
             
             ###################################################################
             
@@ -163,19 +169,34 @@ class Backtest:
             ##################################################################
             
 # Null and Optimized funds
-            # [self.optFunds,self.nullFunds] = self.compare()
+            [self.optFunds,self.nullFunds] = self.compare()
+            
+# Strategy funds
+            # self.order = self.strategy()
+            
+            # stratFunds = self.order.value
+            
+            # stratdates = [strat[0] for strat in stratFunds]
+            # stratvalue = [strat[1] for strat in stratFunds]
             
             # nulldates = [null[0] for null in self.nullFunds]
             # nullvalue = [null[1] for null in self.nullFunds]
             
-# Strategy funds
-            # order = self.strategy()
+            # valAxs[0].plot(nulldates,nullvalue,linestyle='dashed')
+            # valAxs[0].plot(stratdates,stratvalue)
             
-            # stratFunds = order.value
-            # info = order.info
+            # dates = list(zip(*self.order.value))[0]
+            
+            # diff = self.order.info.indexDiff
+            # valAxs[1].plot(dates,diff,color='tab:orange')
+            
+            # drawdown = self.order.info.drawdown
+            # nullDrawdown = self.order.info.nullDrawdown
+            # valAxs[2].plot(dates,nullDrawdown,linestyle='dashed')
+            # valAxs[2].plot(dates,drawdown)
             
             ###################################################################
-            # df = pd.read_excel('Files/MACD_test3.xlsx',index_col=0)
+            # df = pd.read_csv('Files/MACD_test3.xlsx',index_col=0)
             # df = df[df['f']>nullvalue[-1]]
             # df = df[df['numSell']>10]
         
@@ -189,17 +210,6 @@ class Backtest:
             ###################################################################
             self.setupExplore(ticker)
             # self.allResults = self.exploration(avgType=['simple'],windowSlow=[50],windowFast=[20],steepness=[3])
-            
-            # self.outputDf = Utility.dicts2df(self.allResults)
-            # self.outputDf.to_excel('Files/MACD_SMA/'+ticker+'.xlsx')
-            
-# Plotting                        
-            # stratdates = [strat[0] for strat in stratFunds]
-            # stratvalue = [strat[1] for strat in stratFunds]
-            
-            # ax = valAxs
-            # ax.plot(nulldates,nullvalue)
-            # ax.plot(stratdates,stratvalue)
             
             Info[ticker] = self.info
                         
@@ -257,7 +267,8 @@ class Backtest:
                                         inputs['delay'].append(delay)
         
         dfIn = pd.DataFrame.from_dict(inputs)
-        dfIn = dfIn.iloc[22000:]
+        dfIn = dfIn.iloc[59000:]
+        buffer = 59
         
         tic = time()
         dfStep = 1000
@@ -295,7 +306,7 @@ class Backtest:
             allResults = [r.get() for r in results]
             
             self.outputDf = Utility.dicts2df(allResults)
-            self.outputDf.to_csv('Files/MACD_SMA/'+ticker+'_'+str(i+22)+'.csv')
+            self.outputDf.to_csv('Files/MACD_SMA/'+ticker+'_'+str(i+buffer)+'.csv')
         
         toc = time() - tic
         print('Runtime: ' + str(toc)) 
@@ -386,7 +397,7 @@ class Backtest:
         indicator['MACD'] = Indicators.MACD_Delta(self.data['MACD'],delay=self.info['delay'],avg=self.data['MACD_avg'])
         
 # Initiate orders
-        order = Orders(self.initialFunds)
+        order = Orders(self.initialFunds,runNull=True)
         
         seekBuy = True
         seekSell = False
@@ -474,4 +485,5 @@ if __name__ == '__main__':
     
     backtest = Backtest()
     data = backtest.Data
+    order = backtest.order
     # output = backtest.outputsDf
