@@ -267,8 +267,8 @@ class Backtest:
                                         inputs['delay'].append(delay)
         
         dfIn = pd.DataFrame.from_dict(inputs)
-        dfIn = dfIn.iloc[59000:]
-        buffer = 59
+        dfIn = dfIn.iloc[143000:155000]
+        buffer = 143
         
         tic = time()
         dfStep = 1000
