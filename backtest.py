@@ -121,7 +121,7 @@ class Backtest:
             # ax.plot(data['Smooth'],color='black',linewidth=1)
             
             self.data['SMAs'] = Strategy.movingAverage(self.data['Close'],
-                                                      window=130,
+                                                      window=100,
                                                       avgType='exponential',
                                                       outputAll=True,
                                                       colors=('tab:green'),ax=ax,plotOpt=True)
@@ -157,8 +157,8 @@ class Backtest:
             ax = indAxs[2]
             Utility.setPlot(ax)
             self.data['MACD'] = Strategy.macd(self.data['Close'],
-                                              fast=7,slow=8,sig=3,
-                                              avgType='logarithmic',
+                                              fast=2,slow=10,sig=10,
+                                              avgType='exponential',
                                               ax=ax,plotOpt=True)
             
             self.data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0],index=self.data.index.values),
@@ -172,28 +172,28 @@ class Backtest:
             [self.optFunds,self.nullFunds] = self.compare()
             
 # Strategy funds
-            # self.order = self.strategy()
+            self.order = self.strategy()
             
-            # stratFunds = self.order.value
+            stratFunds = self.order.value
             
-            # stratdates = [strat[0] for strat in stratFunds]
-            # stratvalue = [strat[1] for strat in stratFunds]
+            stratdates = [strat[0] for strat in stratFunds]
+            stratvalue = [strat[1] for strat in stratFunds]
             
-            # nulldates = [null[0] for null in self.nullFunds]
-            # nullvalue = [null[1] for null in self.nullFunds]
+            nulldates = [null[0] for null in self.nullFunds]
+            nullvalue = [null[1] for null in self.nullFunds]
             
-            # valAxs[0].plot(nulldates,nullvalue,linestyle='dashed')
-            # valAxs[0].plot(stratdates,stratvalue)
+            valAxs[0].plot(nulldates,nullvalue,linestyle='dashed')
+            valAxs[0].plot(stratdates,stratvalue)
             
-            # dates = list(zip(*self.order.value))[0]
+            dates = list(zip(*self.order.value))[0]
             
-            # diff = self.order.info.indexDiff
-            # valAxs[1].plot(dates,diff,color='tab:orange')
+            diff = self.order.info.indexDiff
+            valAxs[1].plot(dates,diff,color='tab:orange')
             
-            # drawdown = self.order.info.drawdown
-            # nullDrawdown = self.order.info.nullDrawdown
-            # valAxs[2].plot(dates,nullDrawdown,linestyle='dashed')
-            # valAxs[2].plot(dates,drawdown)
+            drawdown = self.order.info.drawdown
+            nullDrawdown = self.order.info.nullDrawdown
+            valAxs[2].plot(dates,nullDrawdown,linestyle='dashed')
+            valAxs[2].plot(dates,drawdown)
             
             ###################################################################
             # df = pd.read_csv('Files/MACD_test3.xlsx',index_col=0)
@@ -208,7 +208,7 @@ class Backtest:
             # outputDf.to_excel("MACD_test2.xlsx")
             
             ###################################################################
-            self.setupExplore(ticker)
+            # self.setupExplore(ticker)
             # self.allResults = self.exploration(avgType=['simple'],windowSlow=[50],windowFast=[20],steepness=[3])
             
             Info[ticker] = self.info
