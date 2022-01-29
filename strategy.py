@@ -388,7 +388,7 @@ class Strategy:
                 ax1 = ax[0]
                 ax2 = ax[1]
                 
-                ax1.plot(data.index.values,meanPrice,color=colors[0],linewidth=1)
+                ax1.plot(data.index.values,meanPrice,color=colors[0],linewidth=1,label='MA_' + avgType.upper() + '_' + str(window))
                 
                 ax2.bar(data.index.values,avgSlope,color=colors[1])
                 ax2.set_ylabel('Slope',color=colors[1]) 
@@ -407,7 +407,7 @@ class Strategy:
                     if colors == None:
                         colors = 'tab:orange'
                         
-                    ax.plot(data.index.values,meanPrice,color=colors,linewidth=1)
+                    ax.plot(data.index.values,meanPrice,color=colors,linewidth=1,label='MA_' + avgType.upper() + '_' + str(window))
                 else:
                     if colors == None or len(colors) != 2:
                         colors = ('tab:orange','tab:blue')
@@ -477,7 +477,7 @@ class Strategy:
                 
         return pattern
     
-    def atr(data,window=14,avgType='simple',ignoreStart=True):
+    def atr(data,window=14,avgType='simple',ignoreStart=True,ax=None,plotOpt=False):
         pricesHigh = data['High']
         pricesLow = data['Low']
         pricesClose = data['Close']
@@ -503,11 +503,12 @@ class Strategy:
                 meanPrice = Utility.avg(vals,avgType=avgType)
                 
             pattern.append(meanPrice)
-            
-        # plt.subplot(2,1,1)
-        # plt.plot(pricesClose)
-        # plt.subplot(2,1,2)
-        # plt.plot(pattern)
+        
+        if plotOpt:
+            if ax == None:
+                ax = plt.gca()
+                
+            ax.plot(data.index.values,pattern)
         
         return pattern
     

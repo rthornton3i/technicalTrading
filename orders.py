@@ -41,7 +41,7 @@ class Orders:
         
         self.info.numSells += 1
         self.info.earnings.append((self.sellPrice - self.buyPrice) / self.buyPrice)
-        self.info.holdPeriod.append(np.timedelta64(self.info.buyDate - date,'D').astype(int))
+        self.info.holdPeriod.append(np.timedelta64(date - self.info.buyDate,'D').astype(int))
         
     def hold(self,curPrice,date):
         self.value.append((date,self.cash + (self.shares * curPrice)))
@@ -64,11 +64,13 @@ class Orders:
         self.info.avgHold = np.mean(self.info.holdPeriod)
         self.info.exposure = np.sum(self.info.holdPeriod) / len(self.value)
         
-        self.info.indexDiff = self.calcIndexDiff()
         [self.info.drawdown, self.info.maxDrawdown] = self.calcDrawdown(self.value)
-        [self.info.nullDrawdown, self.info.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
         self.info.winLoss = self.winLossRate()
-    
+        
+        if self.runNull:
+            self.info.indexDiff = self.calcIndexDiff()
+            [self.info.nullDrawdown, self.info.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
+            
     def calcIndexDiff(self):
         diff = []
         for val,nullVal in zip(self.value,self.nullValue):
@@ -91,7 +93,7 @@ class Orders:
             
             amt = -(localMax - val) / localMax
             drawdown.append(amt)
-            if amt > maxDrawdown:
+            if amt < maxDrawdown:
                 maxDrawdown = amt
     
         return [drawdown,maxDrawdown]

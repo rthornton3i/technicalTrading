@@ -3,13 +3,12 @@ from strategy import Strategy
 from utility import Utility
 from orders import Orders
 from indicators import Indicators
-# from analyze import Analyze
+from analyze import Analyze
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from openpyxl import load_workbook
 from datetime import datetime as dt
 from time import time
 import math
@@ -117,20 +116,25 @@ class Backtest:
             ax = indAxs[0]
             Utility.setPlot(ax,logscale=False,xlimits=[self.data.index.values[0],self.data.index.values[-1]])
             
+            ax.set_title('Price')
             ax.plot(self.data['Close'],linewidth=0.5)
             # ax.plot(data['Smooth'],color='black',linewidth=1)
             
             self.data['SMAs'] = Strategy.movingAverage(self.data['Close'],
                                                       window=100,
-                                                      avgType='exponential',
+                                                      avgType='logarithmic',
+                                                      steepness=2,
                                                       outputAll=True,
                                                       colors=('tab:green'),ax=ax,plotOpt=True)
             
             self.data['SMAf'] = Strategy.movingAverage(self.data['Close'],
-                                                      window=40,
-                                                      avgType='exponential',
+                                                      window=20,
+                                                      avgType='logarithmic',
+                                                      steepness=2,
                                                       outputAll=True,
                                                       colors=('tab:orange'),ax=ax,plotOpt=True)
+            
+            ax.legend()
             
             # Strategy.supportResistance(data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both',ax=ax,plotOpt=True)            
             # Strategy.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
@@ -144,26 +148,42 @@ class Backtest:
             Utility.setPlot(ax)
             
             self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
-            [avg,std] = Strategy.avgPrice(self.data['SMA_Diff'],outputAll=True)
+            self.data['SMA_Diff_Avg'] = Strategy.movingAverage(self.data['SMA_Diff'],
+                                                               window=10,
+                                                               avgType='exponential',
+                                                               ax=ax,plotOpt=True)
             
+            [avg,std] = Strategy.avgPrice(self.data['SMA_Diff'],outputAll=True,ax=ax,plotDev=True,plotOpt=True)
+            
+            ax.set_title('[MAf-MAs] % of Price')
             ax.plot(self.data.index.values,self.data['SMA_Diff']) 
             
             self.info['sma']['avg'] = avg[0]
-            self.info['sma']['std'] = std
+            self.info['sma']['std'] = std*1.8
             
             ##################################################################
 
             # PLOT 3
             ax = indAxs[2]
             Utility.setPlot(ax)
-            self.data['MACD'] = Strategy.macd(self.data['Close'],
-                                              fast=2,slow=10,sig=10,
-                                              avgType='exponential',
-                                              ax=ax,plotOpt=True)
             
-            self.data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0],index=self.data.index.values),
-                                                      colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
+            ax.set_title('ATR')
+            self.data['MACD'] = Strategy.macd(self.data['Close'],
+                                              fast=7,slow=8,sig=3,
+                                              avgType='logarithmic')#,
+                                              # ax=ax,plotOpt=True)
+            
+            self.data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0],index=self.data.index.values))#,
+                                                      # colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
             self.info['delay'] = 2
+            
+            
+            self.data['ATR'] = Strategy.atr(self.data,
+                                            window=10,
+                                            avgType='exponential',
+                                            ax=ax,plotOpt=True)
+            
+            # ax.legend()
             
             ##################################################################
             ##################################################################
@@ -172,6 +192,7 @@ class Backtest:
             [self.optFunds,self.nullFunds] = self.compare()
             
 # Strategy funds
+            ###################################################################
             self.order = self.strategy()
             
             stratFunds = self.order.value
@@ -182,36 +203,31 @@ class Backtest:
             nulldates = [null[0] for null in self.nullFunds]
             nullvalue = [null[1] for null in self.nullFunds]
             
-            valAxs[0].plot(nulldates,nullvalue,linestyle='dashed')
-            valAxs[0].plot(stratdates,stratvalue)
+            valAxs[0].set_title('Value')
+            valAxs[0].plot(nulldates,nullvalue,linestyle='dashed',label='Null')
+            valAxs[0].plot(stratdates,stratvalue,label='Strategy')
+            valAxs[0].legend()
             
             dates = list(zip(*self.order.value))[0]
             
             diff = self.order.info.indexDiff
+            valAxs[1].set_title('% Diff to Null')
             valAxs[1].plot(dates,diff,color='tab:orange')
             
             drawdown = self.order.info.drawdown
             nullDrawdown = self.order.info.nullDrawdown
-            valAxs[2].plot(dates,nullDrawdown,linestyle='dashed')
-            valAxs[2].plot(dates,drawdown)
-            
-            ###################################################################
-            # df = pd.read_csv('Files/MACD_test3.xlsx',index_col=0)
-            # df = df[df['f']>nullvalue[-1]]
-            # df = df[df['numSell']>10]
-        
-            # self.outputs = self.exploration(data, info, avgType=df['a'], fast=df['x'], slow=df['y'], sig=df['z'], delay=df['d'])
-            
-            # outputs = self.outputs
-            
-            # outputDf = pd.DataFrame.from_dict(outputs)
-            # outputDf.to_excel("MACD_test2.xlsx")
+            valAxs[2].set_title('% Drawdown')
+            valAxs[2].plot(dates,nullDrawdown,linestyle='dashed',label='Null')
+            valAxs[2].plot(dates,drawdown,label='Strategy')
+            valAxs[2].legend()
             
             ###################################################################
             # self.setupExplore(ticker)
             # self.allResults = self.exploration(avgType=['simple'],windowSlow=[50],windowFast=[20],steepness=[3])
             
             Info[ticker] = self.info
+            
+            
                         
         self.Data = Data
         self.Info = Info
@@ -220,7 +236,7 @@ class Backtest:
         # self.Figure = Figure
         
     ###########################################################################
-    def setupExplore(self,ticker):
+    def setupInputs2(self):
         inputs = {'avgType':[],
                   'windowSlow':[],
                   'windowFast':[],
@@ -230,47 +246,61 @@ class Backtest:
                   'sig':[],
                   'delay':[]}
         
+        df = Analyze.extractData()
+        
+        inputs['avgType'] = df.avgType
+        inputs['windowSlow'] = df.windowSlow
+        inputs['windowFast'] = df.windowFast
+        inputs['steepness'] = df.steepness
+        inputs['fast'] = df.fast
+        inputs['slow'] = df.slow
+        inputs['sig'] = df.sig
+        inputs['delay'] = df.delay
+        
+        dfIn = pd.DataFrame.from_dict(inputs)
+        
+        return dfIn
+        
+    ###########################################################################
+    def setupInputs(self):
+        inputs = {'avgType':[],
+                  'windowSlow':[],
+                  'windowFast':[],
+                  'steepness':[],
+                  'stdev':[]}
+        
         wSlowRange = list(range(50,200,25))
         wFastRange = list(range(10,50,10))
-        fastRange = list(range(2,12,2))
-        slowRange = list(range(7,28,3))
-        sigRange = list(range(2,15,2))
-        delayRange = list(range(1,7))
+        stds = [n/10 for n in range(10,20,2)]
         
         for avgType in ['simple','exponential','logarithmic']:
             for windowSlow in wSlowRange:
                 for windowFast in wFastRange:
-                    for fast in fastRange:
-                        for slow in slowRange:
-                            if slow < fast:
-                                continue
-                            for sig in sigRange:
-                                for delay in delayRange:
-                                    if avgType != 'simple':
-                                        for steepness in range(1,6):
-                                            inputs['avgType'].append(avgType)
-                                            inputs['windowSlow'].append(windowSlow)
-                                            inputs['windowFast'].append(windowFast)
-                                            inputs['steepness'].append(steepness)
-                                            inputs['fast'].append(fast)
-                                            inputs['slow'].append(slow)
-                                            inputs['sig'].append(sig)
-                                            inputs['delay'].append(delay)
-                                    else:
-                                        inputs['avgType'].append(avgType)
-                                        inputs['windowSlow'].append(windowSlow)
-                                        inputs['windowFast'].append(windowFast)
-                                        inputs['steepness'].append(0)
-                                        inputs['fast'].append(fast)
-                                        inputs['slow'].append(slow)
-                                        inputs['sig'].append(sig)
-                                        inputs['delay'].append(delay)
+                    for stdev in stds:
+                        if avgType != 'simple':
+                            for steepness in range(1,6):
+                                inputs['avgType'].append(avgType)
+                                inputs['windowSlow'].append(windowSlow)
+                                inputs['windowFast'].append(windowFast)
+                                inputs['steepness'].append(steepness)
+                                inputs['stdev'].append(stdev)
+                        else:
+                            inputs['avgType'].append(avgType)
+                            inputs['windowSlow'].append(windowSlow)
+                            inputs['windowFast'].append(windowFast)
+                            inputs['steepness'].append(0)
+                            inputs['stdev'].append(stdev)
         
         dfIn = pd.DataFrame.from_dict(inputs)
-        dfIn = dfIn.iloc[143000:155000]
-        buffer = 143
         
+        return dfIn
+    
+    ###########################################################################
+    def setupExplore(self,ticker):
         tic = time()
+        
+        dfIn = self.setupInputs()
+        
         dfStep = 1000
         for i,x in enumerate(range(0,len(dfIn),dfStep)):
             if x > len(dfIn) - dfStep:
@@ -292,10 +322,7 @@ class Backtest:
                                 'windowSlow':ins.windowSlow.tolist(),
                                 'windowFast':ins.windowFast.tolist(),
                                 'steepness':ins.steepness.tolist(),
-                                'fast':ins.fast.tolist(),
-                                'slow':ins.slow.tolist(),
-                                'sig':ins.sig.tolist(),
-                                'delay':ins.delay.tolist()}
+                                'stdev':ins.stdev.tolist()}
                     
                     results.append(pool.apply_async(self.exploration, kwds=keywords))
                
@@ -306,7 +333,7 @@ class Backtest:
             allResults = [r.get() for r in results]
             
             self.outputDf = Utility.dicts2df(allResults)
-            self.outputDf.to_csv('Files/MACD_SMA/'+ticker+'_'+str(i+buffer)+'.csv')
+            self.outputDf.to_csv('Files/MACD_SMAdiff/'+ticker+'_'+str(i)+'.csv')
         
         toc = time() - tic
         print('Runtime: ' + str(toc)) 
@@ -317,32 +344,18 @@ class Backtest:
                    'windowSlow':[],
                    'windowFast':[],
                    'steepness':[],
+                   'stdev':[],
                    
-                   'fast':[],
-                   'slow':[],
-                   'sig':[],
-                   'delay':[],
-                   
-                   'numBuy':[],
                    'numSell':[],
-                   'avgEarn':[],
-                   # 'drawdown':[],
-                   # 'winLoss':[],
-                   'value':[]}
-                   # 'zzz':[]}
+                   'exposure':[],
+                   'drawdown':[],
+                   'winLoss':[],
+                   'value':[],
+                   'zzz':[]}
         
-        for avgType,windowSlow,windowFast,steepness,fast,slow,sig,delay in \
+        for avgType,windowSlow,windowFast,steepness,stdev in \
             zip(kwargs['avgType'],kwargs['windowSlow'],kwargs['windowFast'], \
-                kwargs['steepness'],kwargs['fast'],kwargs['slow'], \
-                kwargs['sig'],kwargs['delay']):
-            
-            self.data['MACD'] = Strategy.macd(self.data['Close'],
-                                              fast=fast,slow=slow,
-                                              sig=sig,avgType=avgType)
-            
-            self.data['MACD_avg'] = Strategy.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0],index=self.data.index.values))
-            
-            self.info['delay'] = delay
+                kwargs['steepness'],kwargs['stdev']):
             
             self.data['SMAs'] = Strategy.movingAverage(self.data['Close'],
                                                        window=windowSlow,
@@ -357,10 +370,13 @@ class Backtest:
                                                        outputAll=True)
             
             self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
+            self.data['SMA_Diff_Avg'] = Strategy.movingAverage(self.data['SMA_Diff'],
+                                                               window=10,
+                                                               avgType='exponential')
             [avg,std] = Strategy.avgPrice(self.data['SMA_Diff'],outputAll=True)
             
             self.info['sma']['avg'] = avg[0]
-            self.info['sma']['std'] = std
+            self.info['sma']['std'] = std*stdev
             
             order = self.strategy()
         
@@ -368,19 +384,14 @@ class Backtest:
             outputs['windowSlow'].append(windowSlow)
             outputs['windowFast'].append(windowFast)
             outputs['steepness'].append(steepness)
+            outputs['stdev'].append(stdev)
             
-            outputs['fast'].append(fast)
-            outputs['slow'].append(slow)
-            outputs['sig'].append(sig)
-            outputs['delay'].append(delay)
-            
-            outputs['numBuy'].append(order.info.numBuys)
             outputs['numSell'].append(order.info.numSells)
-            outputs['avgEarn'].append(order.info.avgEarn)
-            # outputs['drawdown'].append(order.info.drawdown)
-            # outputs['winLoss'].append(order.info.winLoss)
+            outputs['exposure'].append(order.info.exposure)
+            outputs['drawdown'].append(order.info.maxDrawdown)
+            outputs['winLoss'].append(order.info.winLoss)
             outputs['value'].append(order.value[-1][1])
-            # outputs['zzz'].append(avgType + '-' + str(windowSlow) + '-' + str(windowFast) + '-' + str(steepness))
+            outputs['zzz'].append(avgType + '-' + str(windowSlow) + '-' + str(windowFast) + '-' + str(steepness) + '-' + str(stdev))
                                 
         return outputs
     
@@ -393,8 +404,14 @@ class Backtest:
         # indicator['SMA'] = Indicators.SMA(self.data['SMA'])
         # indicator['ATR'] = Indicators.ATR(data)
         
-        indicator['SMA'] = Indicators.SMA_Delta(self.data['SMAs'],self.data['SMAf'],self.data['SMA_Diff'],self.info['sma'])
-        indicator['MACD'] = Indicators.MACD_Delta(self.data['MACD'],delay=self.info['delay'],avg=self.data['MACD_avg'])
+        indicator['SMA'] = Indicators.SMA_Delta(self.data['SMAs'],
+                                                self.data['SMAf'],
+                                                self.data['SMA_Diff'],
+                                                self.data['SMA_Diff_Avg'],
+                                                self.info['sma'])
+        indicator['MACD'] = Indicators.MACD_Delta(self.data['MACD'],
+                                                  delay=self.info['delay'],
+                                                  avg=self.data['MACD_avg'])
         
 # Initiate orders
         order = Orders(self.initialFunds,runNull=True)
@@ -485,5 +502,5 @@ if __name__ == '__main__':
     
     backtest = Backtest()
     data = backtest.Data
-    order = backtest.order
+    # order = backtest.order
     # output = backtest.outputsDf

@@ -86,7 +86,7 @@ class Indicators:
     
     class SMA_Delta:
         
-        def __init__(self,slow,fast,diff,info):
+        def __init__(self,slow,fast,diff,diffAvg,info):
             self.slow = {}
             self.fast = {}
             
@@ -101,31 +101,31 @@ class Indicators:
             self.fast['slope'] = tech[2]
             
             self.diff = diff
+            self.diffAvg = diffAvg
             self.avg = info['avg']
             self.std = info['std']
             
             self.inStd = False
             
         def buy(self,i):
-            buyOpt = True
+            buyOpt = False
             
-            # fastBelowSlow = self.fast['tech'][i-1] < self.slow['tech'][i-1]
-            # fastDownward = self.fast['slope'][i-1] < 0
+            slopeDown = self.diffAvg[i-2] > self.diffAvg[i-1]
+            belowDev = self.diffAvg[i-1] < self.avg - self.std
             
-            # if not fastBelowSlow and not fastDownward:
-            #     buyOpt = True
-                
-            if self.diff[i-1] > self.avg - self.std:
-                self.inStd = True
+            if not slopeDown and not belowDev:
+                buyOpt = True
                     
             return buyOpt
         
         def sell(self,i):
             sellOpt = False
             
-            if self.diff[i-1] < self.avg - self.std and self.inStd:
+            slopeDown = self.diffAvg[i-2] > self.diffAvg[i-1]
+            belowDev = self.diffAvg[i-1] < self.avg - self.std
+            
+            if slopeDown and belowDev:
                 sellOpt = True
-                self.inStd = False
                     
             return sellOpt
         
