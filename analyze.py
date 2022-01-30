@@ -8,11 +8,10 @@ from time import time
 
 class Analyze():
     
-    def extractData():
-        path = 'Files/MACD_SMAdiff/'
-        for ticker in ['SPY','QQQ','DIA']:
+    def extractData(tickers,path):
+        for ticker in tickers:
             init = False
-            for i in range(366):
+            for i in range(12):
                 try:
                     dfi = pd.read_csv(path + ticker + '_' + str(i) + '.csv',index_col=0)
                 except:
@@ -29,7 +28,7 @@ class Analyze():
             df = df[df.numSell>0]
             # df = df[df.value>45000]
             
-            df.to_csv(path + ticker + '_00.csv')
+            df.to_csv(path + ticker + '.csv')
         
         # stdNumSell = np.std(df.numSell)
         # avgNumSell = np.mean(df.numSell)
@@ -47,7 +46,9 @@ if __name__ == '__main__':
     # backtest.test()
     # Data = backtest.Data
     
-    Analyze.extractData()
+    path = 'Files/MACD_ATR/'
+    tickers = ['SPY']#,'QQQ','DIA']
+    Analyze.extractData(tickers,path)
     # df = Analyze.extractData()
     
     # x = df.fast

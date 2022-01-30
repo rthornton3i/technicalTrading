@@ -261,18 +261,16 @@ class Indicators:
         
     class ATR:
         
-        def __init__(self,data):
-            self.atr = Strategy.atr(data,window=14,avgType='simple')
-            self.avgAtr = Utility.smooth(self.atr,window=10,avgType='exponential',trailing=True)
+        def __init__(self,tech,info):
+            self.tech = tech
             
-            self.atrVal = 3
-            # plt.figure(99)
-            # plt.plot(self.avgAtr)
+            self.avg = info['avg']
+            self.std = info['std']
             
         def buy(self,i):
             buyOpt = False
             
-            if self.atr[i] < self.atrVal:
+            if self.tech[i-1] < self.avg + self.std:
                 buyOpt = True
                     
             return buyOpt
@@ -280,7 +278,7 @@ class Indicators:
         def sell(self,i):
             sellOpt = False
             
-            if self.atr[i] > self.atrVal:
+            if self.tech[i-1] > self.avg + self.std:
                 sellOpt = True
                 
             return sellOpt

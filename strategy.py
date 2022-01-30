@@ -11,7 +11,7 @@ class Strategy:
     
     def avgPrice(data,dev=1,colors=(0.25,0.25,0.25),outputAll=False,ax=None,plotDev=False,plotOpt=False):
         y = list(data)        
-        std = np.std(data)
+        std = np.nanstd(data)
         avg = np.nanmean(data)*np.ones((len(data),1))
         
         if outputAll:

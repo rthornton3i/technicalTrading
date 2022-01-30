@@ -110,9 +110,9 @@ class Utility:
         def createDf(ns):
             tempDf = pd.DataFrame()
             
-            for attr in dir(ns):
-                if not callable(getattr(ns, attr)) and not attr.startswith("__"):
-                    tempDf[attr] = getattr(ns,attr)
+            attrs = Utility.getAttr(ns)
+            for attr in attrs:
+                tempDf[attr] = getattr(ns,attr)
             
             return tempDf
 
@@ -139,3 +139,12 @@ class Utility:
             df = pd.DataFrame.from_dict(dicts)
             
         return df
+    
+    def getAttr(obj):
+        attrs = []
+        for a in dir(obj):
+            if not callable(getattr(obj, a)) and not a.startswith("__"):
+                attrs.append(a)
+                
+        return attrs
+        
