@@ -203,8 +203,9 @@ class Backtest:
         
         dfIn = self.setupInputs()
         
-        start = 0
-        end = 64000 #len(dfIn)
+        start = 66000
+        end = len(dfIn)
+        buffer = 66
         
         dfStep = 1000
         for i,x in enumerate(range(start,end,dfStep)):
@@ -236,7 +237,7 @@ class Backtest:
             allResults = [r.get() for r in results]
             
             self.outputDf = Utility.dicts2df(allResults)
-            self.outputDf.to_csv('Files/'+path+'/'+ticker+'_'+str(i)+'.csv')
+            self.outputDf.to_csv('Files/'+path+'/'+ticker+'_'+str(i+buffer)+'.csv')
         
         toc = time() - tic
         print('Runtime: ' + str(toc)) 
