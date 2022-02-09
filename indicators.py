@@ -38,17 +38,18 @@ class Indicators:
         
     class MACD_Delta:
         
-        def __init__(self,tech,delay=1,avg=None):
+        def __init__(self,data,info):
+            tech = data['MACD']
             self.macdLine = [n[0] for n in tech]
             self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
-            
-            self.delay = delay
+
+            self.delay = info['delay']
             
             if avg is None:
                 self.avg = np.zeros((1,len(self.macdLine)))
             else:
-                self.avg = avg
+                self.avg = data['MACD_avg']
             
         def buy(self,i):
             buyOpt = False
@@ -126,40 +127,6 @@ class Indicators:
             
             if slopeDown and belowDev:
                 sellOpt = True
-                    
-            return sellOpt
-        
-    class MACD_DeltaMod:
-        
-        def __init__(self,data):
-            tech = Strategy.macd(data,fast=5,slow=10,sig=7,avgType='simple')
-            
-            self.macdLine = [n[0] for n in tech]
-            self.signalLine = [n[1] for n in tech]
-            self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
-            
-            self.backdays = 2
-            
-        def buy(self,i):
-            buyOpt = False
-            
-            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
-                if self.diff[i-1] < 0:
-                    for n in range(self.backdays,1,-1):
-                        if abs(self.diff[i-n-1]) < abs(self.diff[i-n]):
-                            buyOpt = True
-                        else:
-                            buyOpt = False
-                            break
-                    
-            return buyOpt
-        
-        def sell(self,i):
-            sellOpt = False
-            
-            if self.macdLine[i-2] > 0 and self.signalLine[i-2] > 0:
-                if self.macdLine[i-2] > self.signalLine[i-2] and self.macdLine[i-1] < self.signalLine[i-1]:
-                    sellOpt = True
                     
             return sellOpt
         
@@ -279,6 +246,28 @@ class Indicators:
             sellOpt = False
             
             if self.tech[i-1] > self.avg + self.std:
+                sellOpt = True
+                
+            return sellOpt
+        
+    class ATR_BB:
+        
+        def __init__(self,data):
+            self.tech = data['ATR']
+            self.bb = data['ATR_BB']
+            
+        def buy(self,i):
+            buyOpt = False
+            
+            if self.tech[i-1] < self.bb[i-1]:
+                buyOpt = True
+                    
+            return buyOpt
+        
+        def sell(self,i):
+            sellOpt = False
+            
+            if self.tech[i-1] > self.bb[i-1]:
                 sellOpt = True
                 
             return sellOpt

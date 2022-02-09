@@ -9,10 +9,14 @@ import matplotlib.pyplot as plt
 
 class Strategy:
     
-    def avgPrice(data,dev=1,colors=(0.25,0.25,0.25),outputAll=False,ax=None,plotDev=False,plotOpt=False):
+    def avgPrice(data,dev=1,avgType='mean',colors=(0.25,0.25,0.25),outputAll=False,ax=None,plotDev=False,plotOpt=False):
         y = list(data)        
         std = np.nanstd(data)
-        avg = np.nanmean(data)*np.ones((len(data),1))
+        
+        if avgType.lower() == 'mean':
+            avg = np.nanmean(data)*np.ones((len(data),1))
+        elif avgType.lower() == 'median':
+            avg = np.nanmedian(data)*np.ones((len(data),1))
         
         if outputAll:
             pattern = [avg,std]
@@ -513,8 +517,6 @@ class Strategy:
         return pattern
     
     def bollingerBands(data,window=20,avgType='simple',ignoreStart=True,ax=None,plotOpt=False):
-        prices = data
-        
         pattern = []
         for i in range(len(data)):
             if ignoreStart and i < window:
@@ -522,14 +524,14 @@ class Strategy:
                 stdPrice = np.nan
             else:
                 if i <= window-1:
-                    price = prices[:i+1]
+                    price = data[:i+1]
                 else:
-                    price = prices[i-window+1:i+1]
+                    price = data[i-window+1:i+1]
                 
                 meanPrice = Utility.avg(price,avgType=avgType)
                 stdPrice = np.std(price)
                 
-            pattern.append((meanPrice-stdPrice,meanPrice+stdPrice))
+            pattern.append((meanPrice-stdPrice,meanPrice,meanPrice+stdPrice))
             
         if plotOpt:
             if ax == None:
@@ -538,7 +540,7 @@ class Strategy:
             bottom = [n[0] for n in pattern]
             top    = [n[1] for n in pattern]
 
-            ax.plot(data.index.values,bottom,color='red',linestyle='dashed',linewidth=1)
+            # ax.plot(data.index.values,bottom,color='red',linestyle='dashed',linewidth=1)
             ax.plot(data.index.values,top,color='green',linestyle='dashed',linewidth=1)
         
         return pattern
@@ -575,13 +577,8 @@ class Strategy:
             if ax == None:
                 ax = plt.gca()
             
-            ax.plot(data.index.values,list(zip(*pattern))[0],color='tab:blue')
-            ax.set_ylabel('MACD',color='tab:blue')
-            
-            ax = ax.twinx()
-            
-            ax.plot(data.index.values,list(zip(*pattern))[1],color='tab:orange')
-            ax.set_ylabel('Signal',color='tab:orange')
+            ax.plot(data.index.values,list(zip(*pattern))[0],color='tab:blue',label='MACD')            
+            ax.plot(data.index.values,list(zip(*pattern))[1],color='tab:orange',label='Signal')
             
             # Strategy.avgPrice(pd.Series(macd,index=data.index.values),colors='tab:blue',ax=ax,plotDev=True,plotOpt=True)
             

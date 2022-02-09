@@ -23,7 +23,7 @@ REFERENCES:
 
 class Fetch:
     
-    def __init__(self,tickers=None,startDate=None):
+    def __init__(self,tickers,startDate,endDate=None):
         self.key = 'WKSR42529JVOYXM9'
         
         self.ts = TimeSeries(self.key, output_format='pandas')
@@ -32,6 +32,11 @@ class Fetch:
         
         self.tickers = tickers
         self.startDate = startDate
+        
+        if endDate is None:
+            self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
+        else:
+            self.endDate = endDate
         
     def getPrices(self,splitOpt=False,divOpt=False):
         data = {}
@@ -50,7 +55,7 @@ class Fetch:
             data[ticker].columns = ['Open','High','Low','Close','Volume']
             data[ticker] = data[ticker].reindex(index=data[ticker].index[::-1])
             
-            data[ticker] = data[ticker].loc[self.startDate:]
+            data[ticker] = data[ticker].loc[self.startDate:self.endDate]
             
             if splitOpt:
                 split = 1

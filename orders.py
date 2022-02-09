@@ -9,6 +9,8 @@ class Orders:
         self.value = []
         
         self.runNull = runNull
+        
+        self.initBuy = False
         self.nullShares = 0
         self.nullCash = initialFunds
         self.nullValue = []
@@ -25,6 +27,7 @@ class Orders:
         self.cash -= self.shares * buyPrice
         self.value.append((date,self.cash + (self.shares * buyPrice)))
         
+        self.initBuy = True
         self.calcNull(buyPrice,date)
         
         self.info.numBuys += 1
@@ -50,12 +53,14 @@ class Orders:
     
     def calcNull(self,price,date):
         if self.runNull:
-            if self.nullShares == 0:
+            if self.nullShares == 0 and self.initBuy:
                 self.nullShares += math.floor(self.nullCash / price)
                 self.nullCash -= self.nullShares * price
                 self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
-            else:
+            elif self.initBuy:
                 self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
+            else:
+                self.nullValue.append((date,self.nullCash))
             
     def analyze(self):
         self.info.avgEarn = np.mean(self.info.earnings)
@@ -110,7 +115,7 @@ class Orders:
         if losses > 0:
             winLoss = wins / losses
         else:
-            winLoss = 0
+            winLoss = np.inf
         
         return winLoss
         
