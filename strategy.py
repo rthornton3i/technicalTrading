@@ -3,6 +3,7 @@ from utility import Utility
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt
+import math
 
 import matplotlib.pyplot as plt
 # import mplfinance as mpf
@@ -149,16 +150,16 @@ class Strategy:
         
         return pattern
  
-    def trend(data,minStd=1,numIters=1,direction='both',ax=None,plotOpt=False):
-        def findBounds(line):
+    def trend(data,minStd=1,numIters=1,direction='both',segments=1,ax=None,plotOpt=False):
+        def findBounds(dataX,line):
             if line.lower() == 'upper':
-                [peaks,_]  = Utility.findExtrema(list(data),endsOpt=False)
+                [peaks,_]  = Utility.findExtrema(list(dataX),endsOpt=False)
             elif line.lower() == 'lower':
-                [_,peaks]  = Utility.findExtrema(list(data),endsOpt=False)
+                [_,peaks]  = Utility.findExtrema(list(dataX),endsOpt=False)
             else:
                 raise Exception('ERROR: Invalid line specified.')
             
-            peakDates  = [peak[0] for peak in peaks]
+            peakDates  = [peak[0]+(len(data)-per) for peak in peaks]
             peakPrices = [peak[1] for peak in peaks]
             
             if numIters > 1:
@@ -207,23 +208,26 @@ class Strategy:
         else:
             directions = [direction]
         
-        pattern = {}
-        for direction in directions:
-            if direction.lower() == 'up':
-                linestyle = 'solid'
-            elif direction.lower() == 'down':
-                linestyle = 'dashed'
+        periods = np.round(Utility.expCurve(segments+1,steepness=7,reverse=False)[1:]*(len(data)-1)).astype(int)
+        for per in periods:
+            dataX = data.iloc[-per:]
+            # pattern = {}
+            for direction in directions:
+                if direction.lower() == 'up':
+                    linestyle = 'solid'
+                elif direction.lower() == 'down':
+                    linestyle = 'dashed'
+                
+                ## TOP
+                peakDf = findBounds(dataX,line='upper')
+                peakReg = Strategy.regression(peakDf,minStd=minStd,colors=(0.2,0.5,0.2),style=linestyle,ax=ax,plotOpt=True)
+                
+                ## BOTTOM
+                troughDf = findBounds(dataX,line='lower')
+                troughReg = Strategy.regression(troughDf,minStd=minStd,colors=(0.75,0.2,0.2),style=linestyle,ax=ax,plotOpt=True)
             
-            ## TOP
-            peakDf = findBounds(line='upper')
-            peakReg = Strategy.regression(peakDf,minStd=minStd,colors=(0.2,0.5,0.2),style=linestyle,ax=ax,plotOpt=True)
-            
-            ## BOTTOM
-            troughDf = findBounds(line='lower')
-            troughReg = Strategy.regression(troughDf,minStd=minStd,colors=(0.75,0.2,0.2),style=linestyle,ax=ax,plotOpt=True)
-        
-            # pattern[direction] = [peakReg,troughReg]
-            # pattern = [peakR2,troughR2]
+                # pattern[direction] = [peakReg,troughReg]
+                # pattern = [peakR2,troughR2]
         
         # return pattern
     
@@ -394,10 +398,10 @@ class Strategy:
                 
                 ax1.plot(data.index.values,meanPrice,color=colors[0],linewidth=1,label='MA_' + avgType.upper() + '_' + str(window))
                 
-                ax2.bar(data.index.values,avgSlope,color=colors[1])
-                ax2.set_ylabel('Slope',color=colors[1]) 
+                # ax2.bar(data.index.values,avgSlope,color=colors[1])
+                # ax2.set_ylabel('Slope',color=colors[1]) 
                 
-                ax2 = ax2.twinx()
+                # ax2 = ax2.twinx()
                 ax2.set_ylabel('Price Delta',color=colors[0])  
                 
                 ax2.plot(data.index.values,deltaPrice,color=colors[0],linewidth=1)
