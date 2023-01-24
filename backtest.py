@@ -23,7 +23,7 @@ import warnings
 class Backtest:
 
     def __init__(self):
-        self.tickers = ['SPY']  # ,'QQQ','DIA']
+        self.tickers = ['SPY'] #['SPY','QQQ','DIA']
 
         # Slow
         # self.startDate = pd.Timestamp(year=2012,month=4,day=1)
@@ -42,16 +42,17 @@ class Backtest:
         # self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
 
         # self.startDate = pd.Timestamp(year=2020,month=3,day=23)
-        self.startDate = pd.Timestamp(year=2006, month=1, day=1)
-        # self.startDate = pd.Timestamp(year=2009,month=3,day=1)
-        # self.startDate = pd.Timestamp(year=dt.now().year-3,month=dt.now().month,day=dt.now().day)
+        # self.startDate = pd.Timestamp(year=2006, month=1, day=1)
+        # self.startDate = pd.Timestamp(year=2019,month=12,day=11)
+        self.startDate = pd.Timestamp(year=dt.now().year-10,month=dt.now().month,day=dt.now().day)
 
         # self.endDate = pd.Timestamp(year=2012,month=1,day=1)
         self.endDate = pd.Timestamp(year=dt.now().year, month=dt.now().month, day=dt.now().day)
 
         self.initialFunds = 10000
 
-        self.run(False, False)
+        # self.test()
+        self.run(True, True)
 
     ###########################################################################
     def test(self):
@@ -110,28 +111,28 @@ class Backtest:
             # Strategy.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
             # Strategy.extremaGaps(data['Smooth'],minDuration=10,minPerc=0.1)
 
-            self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
-            self.data['Regression'] = Strategy.regression(self.data['Close'], curveType='logarithmic')
+            # self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
+            # self.data['Regression'] = Strategy.regression(self.data['Close'], curveType='logarithmic')
 
             # toc = time() - tic
             # print('Elapsed time for ' + ticker + ': ' + '{:.2f}'.format(toc) + ' sec')
 
             ###################################################################
             # Strategy funds
-            plotOpt = True
-            Figure = self.plotStrategy(plotOpt)
-            self.executeStrategy(plotOpt)
+            # plotOpt = True
+            # Figure = self.plotStrategy(plotOpt)
+            # self.executeStrategy(plotOpt)
 
             ###################################################################
-            self.inputs = {'stdev': []}
+            # self.inputs = {'stdev': []}
 
             # self.setupExplore(ticker,'MACD_ATR_BBdiff')
             # self.allResults = self.exploration(stdev=[0.5,0.75,1,1.25,1.4,1.5,1.6,1.75])
 
-            Info[ticker] = self.info
+            # Info[ticker] = self.info
 
         self.Data = Data
-        self.Info = Info
+        # self.Info = Info
         # self.Params = Params
         # self.Funds = Funds
         # self.Figure = Figure
