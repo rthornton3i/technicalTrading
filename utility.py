@@ -89,6 +89,7 @@ class Utility:
         if logscale:
             ax.set_yscale('log',base=2)
             ax.yaxis.set_major_formatter(tick.ScalarFormatter())
+            ax.yaxis.set_minor_formatter(tick.ScalarFormatter())
         
         if not xlimits is None:
             ax.set_xlim(xlimits)
@@ -147,4 +148,9 @@ class Utility:
                 attrs.append(a)
                 
         return attrs
+
+    def normalize(x,xi,yi,xj=0,yj=1):
+        norm = (((x - xi) / (yi - xi)) * (yj - xj)) + xj
+
+        return 1 if norm > 1 else -1 if norm < -1 else norm
         
