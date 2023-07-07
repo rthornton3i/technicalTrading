@@ -1,5 +1,5 @@
 from fetch import Fetch
-from strategy import Strategy
+from indicators import Indicators
 from utility import Utility
 
 import numpy as np
@@ -52,30 +52,30 @@ for ticker in tickers:
     
     
     ## SUPPORT/RESISTANCE
-    # pattern = Strategy.supportResistance(data['Smooth'],thresh=0.15,minNum=4,minDuration=10,style='resistance',ax=ax)
-    # pattern = Strategy.supportResistance(data['Smooth'],thresh=0.15,minNum=4,minDuration=10,style='support',ax=ax)
+    # pattern = Indicators.supportResistance(data['Smooth'],thresh=0.15,minNum=4,minDuration=10,style='resistance',ax=ax)
+    # pattern = Indicators.supportResistance(data['Smooth'],thresh=0.15,minNum=4,minDuration=10,style='support',ax=ax)
     
     
     ## REGRESSION
-    # pattern = Strategy.regression(data['Adjusted'],curveType='logarithmic',dev=1,devOpt=False,ax=ax)
+    # pattern = Indicators.regression(data['Adjusted'],curveType='logarithmic',dev=1,devOpt=False,ax=ax)
     
     # i = 1
     # for dateOffset in [0]:#,6,9]:
-    #     pattern = Strategy.regression(data['Adjusted'].loc[startDate+pd.DateOffset(months=dateOffset):],curveType='logarithmic',dev=1,colors=(1/i,0.6/i,0.2/i),devOpt=False,ax=ax)
+    #     pattern = Indicators.regression(data['Adjusted'].loc[startDate+pd.DateOffset(months=dateOffset):],curveType='logarithmic',dev=1,colors=(1/i,0.6/i,0.2/i),devOpt=False,ax=ax)
     #     i += 1
     
-    # pattern = Strategy.avgPrice(data['Adjusted'],dev=1)
+    # pattern = Indicators.avgPrice(data['Adjusted'],dev=1)
     
     
     ## CHANNELS
     for direction in ['up','down']:
-        pattern = Strategy.trend(data['Close'],direction=direction,minStd=0.5,ax=ax)
+        pattern = Indicators.trend(data['Close'],direction=direction,minStd=0.5,ax=ax)
         # for dateOffset in [0]:#,6,9]:
-        #     pattern = Strategy.trend(data['Smooth'].loc[startDate+pd.DateOffset(months=dateOffset):],direction=direction,minStd=0.5,ax=ax)
+        #     pattern = Indicators.trend(data['Smooth'].loc[startDate+pd.DateOffset(months=dateOffset):],direction=direction,minStd=0.5,ax=ax)
     
     
     ## PEAKS
-    # pattern = Strategy.extremaGaps(data['Smooth'],minDuration=10,minPerc=0.1)
+    # pattern = Indicators.extremaGaps(data['Smooth'],minDuration=10,minPerc=0.1)
     
     # print('Num P2T: ' + str(len(pattern[0])))
     # print('Num T2P: ' + str(len(pattern[1])))
