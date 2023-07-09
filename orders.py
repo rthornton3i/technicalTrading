@@ -17,8 +17,8 @@ class Orders:
         
         self.buyPrice = 0
         self.sellPrice = 0
-        
-        self.info = self.Info()
+
+        self.info = Info()
         
     def buy(self,buyPrice,date):
         self.buyPrice = buyPrice
@@ -61,84 +61,27 @@ class Orders:
                 self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
             else:
                 self.nullValue.append((date,self.nullCash))
-             
-    class Info:
-        
-        def __init__(self):
-            self.numBuys = 0
-            self.numSells = 0
-            
-            self.earnings = []
-            self.avgEarn = []
-            self.stdEarn = []
-            
-            self.drawdown = []
-            self.maxDrawdown = []
-            self.nullDrawdown = []
-            self.maxNullDrawdown = []
-            
-            self.winLoss = []
-            
-            self.buyDate = []
-            self.holdPeriod = []
-            self.avgHold = []
-            self.exposure = []
 
-            self.indexDiff = []   
+class Info:
+    
+    def __init__(self):
+        self.numBuys = 0
+        self.numSells = 0
+        
+        self.earnings = []
+        self.avgEarn = []
+        self.stdEarn = []
+        
+        self.drawdown = []
+        self.maxDrawdown = []
+        self.nullDrawdown = []
+        self.maxNullDrawdown = []
+        
+        self.winLoss = []
+        
+        self.buyDate = []
+        self.holdPeriod = []
+        self.avgHold = []
+        self.exposure = []
 
-        def analyze(self):
-            self.avgEarn = np.mean(self.earnings)
-            self.stdEarn = np.std(self.earnings)
-            
-            self.avgHold = np.mean(self.holdPeriod)
-            self.exposure = np.sum(self.holdPeriod) / len(self.value)
-            
-            [self.drawdown, self.maxDrawdown] = self.calcDrawdown(self.value)
-            self.winLoss = self.winLossRate()
-            
-            if self.runNull:
-                self.indexDiff = self.calcIndexDiff()
-                [self.nullDrawdown, self.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
-                
-        def calcIndexDiff(self):
-            diff = []
-            for val,nullVal in zip(self.value,self.nullValue):
-                val = val[1]
-                nullVal = nullVal[1]
-                
-                diff.append((val - nullVal) / val)
-                
-            return diff
-        
-        def calcDrawdown(self,value):
-            localMax = 0
-            
-            drawdown = []
-            maxDrawdown = 0
-            
-            for _,val in value:
-                if val > localMax:
-                    localMax = val
-                
-                amt = -(localMax - val) / localMax
-                drawdown.append(amt)
-                if amt < maxDrawdown:
-                    maxDrawdown = amt
-        
-            return [drawdown,maxDrawdown]
-        
-        def winLossRate(self):
-            wins = 0
-            losses = 0
-            for earn in self.earnings:
-                if earn > 0:
-                    wins += 1
-                else:
-                    losses += 1
-            
-            if losses > 0:
-                winLoss = wins / losses
-            else:
-                winLoss = np.inf
-            
-            return winLoss
+        self.indexDiff = [] 

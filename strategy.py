@@ -43,11 +43,12 @@ class Strategy:
             self.macdLine = [n[0] for n in tech]
             self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
+            self.avg = None
 
             self.delay = info['delay']
             
-            if avg is None:
-                self.avg = np.zeros((1,len(self.macdLine)))
+            if self.avg is None:
+                self.avg = np.zeros((len(self.macdLine),1))
             else:
                 self.avg = data['MACD_avg']
             

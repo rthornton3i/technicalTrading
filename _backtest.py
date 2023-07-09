@@ -2,6 +2,7 @@ from fetch import Fetch
 from indicators import Indicators
 from utility import Utility
 from orders import Orders
+from analyze import Analyze
 from strategy import Strategy
 
 import numpy as np
@@ -118,9 +119,9 @@ class Backtest:
 
             ###################################################################
             # Indicators funds
-            # plotOpt = True
-            # Figure = self.plotStrategy(plotOpt)
-            # self.executeStrategy(plotOpt)
+            plotOpt = True
+            Figure = self.plotStrategy(plotOpt)
+            self.executeStrategy(plotOpt)
 
             ###################################################################
             # self.inputs = {'stdev': []}
@@ -137,146 +138,9 @@ class Backtest:
         # self.Figure = Figure
 
     ###########################################################################
-    def setupInputs(self):
-        inputs = self.inputs
-
-        # fastRng = list(range(3,14,2))
-        # sigRng = list(range(3,12,2))
-        # delayRng = list(range(1,5))
-        # slowRng = np.unique([int(np.round(n/10 * fast)) for n in range(11,22,2)])
-
-        for stdev in [0.5, 0.75, 1, 1.25, 1.4, 1.5, 1.6, 1.75, 2, 2.25, 2.5]:
-            var = [stdev]
-            for i, attr in enumerate(inputs):
-                inputs[attr].append(var[i])
-
-        dfIn = pd.DataFrame.from_dict(inputs)
-
-        return dfIn
-
-    ###########################################################################
-    def setupExplore(self, ticker, path):
-        tic = time()
-
-        outdir = 'Files/' + path
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-
-        dfIn = self.setupInputs()
-
-        start = 0
-        end = len(dfIn)
-        buffer = 0
-
-        dfStep = 1000
-        for i, x in enumerate(range(start, end, dfStep)):
-            if x > len(dfIn) - dfStep:
-                df = dfIn.iloc[x:]
-            else:
-                df = dfIn.iloc[x:x + dfStep]
-            # df = dfIn
-
-            with Pool(processes=mp.cpu_count()) as pool:
-                results = []
-                stepSize = int(np.ceil(len(df) / mp.cpu_count()))
-                for n in range(0, len(df), stepSize):
-                    if n > len(df) - stepSize:
-                        ins = df.iloc[n:]
-                    else:
-                        ins = df.iloc[n:n + stepSize]
-
-                    keywords = {}
-                    for attr in self.inputs:
-                        keywords[attr] = getattr(ins, attr).tolist()
-
-                    results.append(pool.apply_async(self.exploration, kwds=keywords))
-
-                pool.close()
-                pool.join()
-
-            [result.wait() for result in results]
-            allResults = [r.get() for r in results]
-
-            self.outputDf = Utility.dicts2df(allResults)
-            self.outputDf.to_csv('Files/' + path + '/' + ticker + '_' + str(i + buffer) + '.csv')
-
-        toc = time() - tic
-        print('Runtime: ' + str(toc))
-
-        ###########################################################################
-
-    def exploration(self, **kwargs):
-        outputs = {'stdev': []}
-
-        outputs['numSell'] = []
-        outputs['exposure'] = []
-        outputs['drawdown'] = []
-        outputs['winLoss'] = []
-        outputs['value'] = []
-        outputs['zzz'] = []
-
-        for stdev in kwargs['stdev']:
-            # zip(kwargs['stdev']):
-
-            # self.data['SMAs'] = Indicators.movingAverage(self.data['Close'],
-            #                                            window=windowSlow,
-            #                                            avgType=avgType,
-            #                                            steepness=steepness,
-            #                                            outputAll=True)
-
-            # self.data['SMAf'] = Indicators.movingAverage(self.data['Close'],
-            #                                            window=windowFast,
-            #                                            avgType=avgType,
-            #                                            steepness=steepness,
-            #                                            outputAll=True)
-
-            # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
-            # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],
-            #                                                    window=10,
-            #                                                    avgType='exponential')
-            # [avg,std] = Indicators.avgPrice(self.data['SMA_Diff'],outputAll=True)
-
-            # self.info['sma']['avg'] = avg[0]
-            # self.info['sma']['std'] = std*stdev
-
-            self.data['MACD'] = Indicators.macd(self.data['Close'],
-                                              fast=5, slow=8, sig=3,
-                                              avgType='logarithmic')
-
-            self.data['MACD_avg'] = Indicators.avgPrice(
-                pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))
-
-            self.info['delay'] = 1
-
-            self.data['ATR'] = Indicators.atr(self.data,
-                                            window=12,
-                                            avgType='logarithmic')
-
-            self.data['BB'] = Indicators.bollingerBands(self.data['ATR'],
-                                                      window=125,
-                                                      avgType='median')
-
-            [_, mean, high] = list(zip(*self.data['BB']))
-            self.data['ATR_BB'] = [m + ((h - m) * stdev) for m, h in zip(mean, high)]
-
-            order = self.strategy()
-
-            v = [stdev]
-            var = [stdev,
-                   order.info.numSells,
-                   order.info.exposure,
-                   order.info.maxDrawdown,
-                   order.info.winLoss,
-                   order.value[-1][1],
-                   '-'.join([str(n) for n in v])]
-
-            for i, attr in enumerate(outputs):
-                outputs[attr].append(var[i])
-
-        return outputs
-
+    
     def executeStrategy(self, plotOpt):
-        self.order = self.strategy(runNull=True)
+        self.order = self.setupStrategy(runNull=True)
 
         stratFunds = self.order.value
         nullFunds = self.order.nullValue
@@ -290,7 +154,7 @@ class Backtest:
         if plotOpt:
             self.valAxs[0].set_title('Value')
             self.valAxs[0].plot(nulldates, nullvalue, linestyle='dashed', label='Null')
-            self.valAxs[0].plot(stratdates, stratvalue, label='Indicators')
+            self.valAxs[0].plot(stratdates, stratvalue, label='Strategy')
             self.valAxs[0].legend()
 
         dates = list(zip(*self.order.value))[0]
@@ -305,14 +169,13 @@ class Backtest:
         if plotOpt:
             self.valAxs[2].set_title('% Drawdown')
             self.valAxs[2].plot(dates, nullDrawdown, linestyle='dashed', label='Null')
-            self.valAxs[2].plot(dates, drawdown, label='Indicators')
+            self.valAxs[2].plot(dates, drawdown, label='Strategy')
             self.valAxs[2].legend()
 
-        print('Indicators Funds:  $' + '{:,.0f}'.format(stratvalue[-1]))
+        print('Strategy Funds:  $' + '{:,.0f}'.format(stratvalue[-1]))
         print('Null Funds:      $' + '{:,.0f}'.format(nullvalue[-1]))
 
-    ###########################################################################
-    def strategy(self, runNull=False):
+    def setupStrategy(self, runNull=False):
         # Set buy/sell strategies
         indicator = {}
         # indicator['BB'] = Strategy.BB(data['Close'],data['BB'])
@@ -329,7 +192,7 @@ class Backtest:
         indicator['ATR'] = Strategy.ATR_BB(self.data)
 
         # Initiate orders
-        order = Orders(self.initialFunds, runNull=runNull)
+        orders = Orders(self.initialFunds, runNull=runNull)
 
         seekBuy = True
         seekSell = False
@@ -349,28 +212,29 @@ class Backtest:
                     sell = True
                     seekSell = False
 
-                # if (self.data['Close'].iloc[i-1] - order.buyPrice) / order.buyPrice < -0.0:
+                # if (self.data['Close'].iloc[i-1] - orders.buyPrice) / orders.buyPrice < -0.0:
                 #     sell = True
                 #     seekSell = False
 
             if sell:
-                order.sell(self.data['Open'].iloc[i], date)
+                orders.sell(self.data['Open'].iloc[i], date)
 
                 sell = False
                 seekBuy = True
             elif buy:
-                order.buy(self.data['Open'].iloc[i], date)
+                orders.buy(self.data['Open'].iloc[i], date)
 
                 buy = False
                 seekSell = True
             else:
-                order.hold(self.data['Close'].iloc[i], date)
+                orders.hold(self.data['Close'].iloc[i], date)
 
-            # print(date[:10] + ' --- ' + '{:,.0f}'.format(order.value[-1][1]))
+            # print(date[:10] + ' --- ' + '{:,.0f}'.format(orders.value[-1][1]))
 
-        order.info.analyze()
+        analyze = Analyze(orders)
+        orders.info = analyze.analyze()
 
-        return order
+        return orders
 
     def plotStrategy(self, plotOpt=True):
         # Setup plots
@@ -453,7 +317,7 @@ class Backtest:
                                         avgType='logarithmic',
                                         ax=ax, plotOpt=plotOpt)
 
-        print('Mean ATR: ' + str(np.nanmean(self.data['ATR'])))
+        # print('Mean ATR: ' + str(np.nanmean(self.data['ATR'])))
 
         self.data['BB'] = Indicators.bollingerBands(self.data['ATR'],
                                                   window=125,
@@ -496,6 +360,8 @@ class Backtest:
 
         return Figure
 
+    ###########################################################################
+
     def optimize(self):
         prices = self.data['Smooth']
 
@@ -524,6 +390,145 @@ class Backtest:
 
         return optFunds
 
+    ###########################################################################
+
+    def setupExplore(self, ticker, path):
+        tic = time()
+
+        outdir = 'Files/' + path
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
+        dfIn = self.setupInputs()
+
+        start = 0
+        end = len(dfIn)
+        buffer = 0
+
+        dfStep = 1000
+        for i, x in enumerate(range(start, end, dfStep)):
+            if x > len(dfIn) - dfStep:
+                df = dfIn.iloc[x:]
+            else:
+                df = dfIn.iloc[x:x + dfStep]
+            # df = dfIn
+
+            with Pool(processes=mp.cpu_count()) as pool:
+                results = []
+                stepSize = int(np.ceil(len(df) / mp.cpu_count()))
+                for n in range(0, len(df), stepSize):
+                    if n > len(df) - stepSize:
+                        ins = df.iloc[n:]
+                    else:
+                        ins = df.iloc[n:n + stepSize]
+
+                    keywords = {}
+                    for attr in self.inputs:
+                        keywords[attr] = getattr(ins, attr).tolist()
+
+                    results.append(pool.apply_async(self.exploration, kwds=keywords))
+
+                pool.close()
+                pool.join()
+
+            [result.wait() for result in results]
+            allResults = [r.get() for r in results]
+
+            self.outputDf = Utility.dicts2df(allResults)
+            self.outputDf.to_csv('Files/' + path + '/' + ticker + '_' + str(i + buffer) + '.csv')
+
+        toc = time() - tic
+        print('Runtime: ' + str(toc))
+
+    def setupInputs(self):
+        inputs = self.inputs
+
+        # fastRng = list(range(3,14,2))
+        # sigRng = list(range(3,12,2))
+        # delayRng = list(range(1,5))
+        # slowRng = np.unique([int(np.round(n/10 * fast)) for n in range(11,22,2)])
+
+        for stdev in [0.5, 0.75, 1, 1.25, 1.4, 1.5, 1.6, 1.75, 2, 2.25, 2.5]:
+            var = [stdev]
+            for i, attr in enumerate(inputs):
+                inputs[attr].append(var[i])
+
+        dfIn = pd.DataFrame.from_dict(inputs)
+
+        return dfIn
+
+    def exploration(self, **kwargs):
+        outputs = {'stdev': []}
+
+        outputs['numSell'] = []
+        outputs['exposure'] = []
+        outputs['drawdown'] = []
+        outputs['winLoss'] = []
+        outputs['value'] = []
+        outputs['zzz'] = []
+
+        for stdev in kwargs['stdev']:
+            # zip(kwargs['stdev']):
+
+            # self.data['SMAs'] = Indicators.movingAverage(self.data['Close'],
+            #                                            window=windowSlow,
+            #                                            avgType=avgType,
+            #                                            steepness=steepness,
+            #                                            outputAll=True)
+
+            # self.data['SMAf'] = Indicators.movingAverage(self.data['Close'],
+            #                                            window=windowFast,
+            #                                            avgType=avgType,
+            #                                            steepness=steepness,
+            #                                            outputAll=True)
+
+            # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
+            # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],
+            #                                                    window=10,
+            #                                                    avgType='exponential')
+            # [avg,std] = Indicators.avgPrice(self.data['SMA_Diff'],outputAll=True)
+
+            # self.info['sma']['avg'] = avg[0]
+            # self.info['sma']['std'] = std*stdev
+
+            self.data['MACD'] = Indicators.macd(self.data['Close'],
+                                              fast=5, slow=8, sig=3,
+                                              avgType='logarithmic')
+
+            self.data['MACD_avg'] = Indicators.avgPrice(
+                pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))
+
+            self.info['delay'] = 1
+
+            self.data['ATR'] = Indicators.atr(self.data,
+                                            window=12,
+                                            avgType='logarithmic')
+
+            self.data['BB'] = Indicators.bollingerBands(self.data['ATR'],
+                                                      window=125,
+                                                      avgType='median')
+
+            [_, mean, high] = list(zip(*self.data['BB']))
+            self.data['ATR_BB'] = [m + ((h - m) * stdev) for m, h in zip(mean, high)]
+
+            order = self.setupStrategy()
+
+            v = [stdev]
+            var = [stdev,
+                   order.info.numSells,
+                   order.info.exposure,
+                   order.info.maxDrawdown,
+                   order.info.winLoss,
+                   order.value[-1][1],
+                   '-'.join([str(n) for n in v])]
+
+            for i, attr in enumerate(outputs):
+                outputs[attr].append(var[i])
+
+        return outputs
+
+###############################################################################
+###############################################################################
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
