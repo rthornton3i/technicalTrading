@@ -18,7 +18,7 @@ class Orders:
         self.buyPrice = 0
         self.sellPrice = 0
 
-        self.info = Info()
+        self.info = self.Info()
         
     def buy(self,buyPrice,date):
         self.buyPrice = buyPrice
@@ -62,26 +62,26 @@ class Orders:
             else:
                 self.nullValue.append((date,self.nullCash))
 
-class Info:
-    
-    def __init__(self):
-        self.numBuys = 0
-        self.numSells = 0
+    class Info:
         
-        self.earnings = []
-        self.avgEarn = []
-        self.stdEarn = []
-        
-        self.drawdown = []
-        self.maxDrawdown = []
-        self.nullDrawdown = []
-        self.maxNullDrawdown = []
-        
-        self.winLoss = []
-        
-        self.buyDate = []
-        self.holdPeriod = []
-        self.avgHold = []
-        self.exposure = []
+        def __init__(self):
+            self.numBuys = 0
+            self.numSells = 0
+            
+            self.earnings = []
+            self.avgEarn = []
+            self.stdEarn = []
+            
+            self.drawdown = []
+            self.maxDrawdown = []
+            self.nullDrawdown = []
+            self.maxNullDrawdown = []
+            
+            self.winLoss = []
+            
+            self.buyDate = []
+            self.holdPeriod = []
+            self.avgHold = []
+            self.exposure = []
 
-        self.indexDiff = [] 
+            self.indexDiff = [] 

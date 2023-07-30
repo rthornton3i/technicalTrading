@@ -4,27 +4,31 @@ class Analyze:
 
     def __init__(self, orders):
         self.orders = orders
-        self.info = orders.info
+
+        self.value = self.orders.value
+        self.nullValue = self.orders.nullValue
+        self.runNull = self.orders.runNull
 
     def analyze(self):
-        self.info.avgEarn = np.mean(self.info.earnings)
-        self.info.stdEarn = np.std(self.info.earnings)
+        info = self.orders.info
+        info.avgEarn = np.mean(info.earnings)
+        info.stdEarn = np.std(info.earnings)
         
-        self.info.avgHold = np.mean(self.info.holdPeriod)
-        self.info.exposure = np.sum(self.info.holdPeriod) / len(self.orders.value)
+        info.avgHold = np.mean(info.holdPeriod)
+        info.exposure = np.sum(info.holdPeriod) / len(self.value)
         
-        [self.info.drawdown, self.info.maxDrawdown] = self.calcDrawdown(self.orders.value)
-        self.info.winLoss = self.winLossRate()
+        [info.drawdown, info.maxDrawdown] = self.calcDrawdown(self.value)
+        info.winLoss = self.winLossRate(info.earnings)
         
-        if self.orders.runNull:
-            self.info.indexDiff = self.calcIndexDiff()
-            [self.info.nullDrawdown, self.info.maxNullDrawdown] = self.calcDrawdown(self.orders.nullValue)
+        if self.runNull:
+            info.indexDiff = self.calcIndexDiff()
+            [info.nullDrawdown, info.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
 
-        return self.info
+        return info
             
     def calcIndexDiff(self):
         diff = []
-        for val,nullVal in zip(self.orders.value,self.orders.nullValue):
+        for val,nullVal in zip(self.value,self.nullValue):
             val = val[1]
             nullVal = nullVal[1]
             
@@ -49,10 +53,10 @@ class Analyze:
     
         return [drawdown,maxDrawdown]
     
-    def winLossRate(self):
+    def winLossRate(self,earnings):
         wins = 0
         losses = 0
-        for earn in self.info.earnings:
+        for earn in earnings:
             if earn > 0:
                 wins += 1
             else:

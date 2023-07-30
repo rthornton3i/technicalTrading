@@ -42,9 +42,9 @@ class Fetch:
         data = {}
         for ticker in self.tickers:
             while True:
-                # data[ticker],_ = self.ts.get_daily(symbol=ticker,outputsize='full')
+                # data[ticker],_ = self.ts.get_daily_adjusted(symbol=ticker,outputsize='full')
                 try:
-                    data[ticker],_ = self.ts.get_daily_adjusted(symbol=ticker,outputsize='full')
+                    data[ticker],_ = self.ts.get_daily(symbol=ticker,outputsize='full')
                     print('Fetched: ' + ticker + '...')
                     break
                 except ValueError:
@@ -52,7 +52,8 @@ class Fetch:
                     sleep(5)
             
             data[ticker].index.name = 'Date'
-            data[ticker].columns = ['Open','High','Low','Close','Adjusted','Volume','Dividend','Split']
+            # data[ticker].columns = ['Open','High','Low','Close','Adjusted','Volume','Dividend','Split']
+            data[ticker].columns = ['Open','High','Low','Close','Volume']
             data[ticker] = data[ticker].reindex(index=data[ticker].index[::-1])
             
             data[ticker] = data[ticker].loc[self.startDate:self.endDate]
