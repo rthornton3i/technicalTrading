@@ -129,28 +129,51 @@ class Utility:
                 
         return df
     
-    def dicts2df(dicts):
-        if isinstance(dicts,list):
-            for i,dic in enumerate(dicts):
-                if i == 0:
-                    df = pd.DataFrame.from_dict(dic)
-                else:
-                    df = df.append(pd.DataFrame.from_dict(dic))
-        else:
-            df = pd.DataFrame.from_dict(dicts)
+    def obj2df(objs):
+        for i in range(len(objs)):
+            [attr,val] = list(zip(*[[attr,val] for attr, val in objs[i].__dict__.items()]))
+            attr,val = list(attr),list(val)
+
+            fieldInd = attr.index('fields')
+            [fieldAttr,fieldVal] = list(zip(*[[attr,val] for attr, val in objs[i].fields.__dict__.items()]))
+
+            del attr[fieldInd]
+            del val[fieldInd]
+
+            attr.extend(fieldAttr)
+            val.extend(fieldVal)
+
+            if i == 0:
+                df = pd.DataFrame(data=[val],columns=attr)
+            else:
+                df = pd.concat([df, pd.DataFrame(data=[val],columns=attr)])
             
         return df
-    
-    def getAttr(obj):
-        attrs = []
-        for a in dir(obj):
-            if not callable(getattr(obj, a)) and not a.startswith("__"):
-                attrs.append(a)
-                
-        return attrs
 
     def normalize(x,xi,yi,xj=0,yj=1):
         norm = (((x - xi) / (yi - xi)) * (yj - xj)) + xj
 
         return 1 if norm > 1 else -1 if norm < -1 else norm
-        
+    
+    def combinations(*args):        
+        a = args[0]
+        b = args[1]
+
+        combs = [[i,j] for j in b for i in a]
+
+        n = 2
+        while n < len(args):
+            a = combs
+            b = args[n]
+            
+            combs_raw = [(i,j) for j in b for i in a]
+
+            combs = []
+            for c in combs_raw:
+                tempComb = c[0].copy()
+                tempComb.append(c[1])
+                combs.append(tempComb)
+
+            n += 1
+
+        return combs

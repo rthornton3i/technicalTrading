@@ -8,15 +8,15 @@ class Strategy:
     
     class MACD:
         
-        def __init__(self,data,avg=None):
+        def __init__(self,data,inputs):
             self.macdLine = [n[0] for n in data]
             self.signalLine = [n[1] for n in data]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             
-            if avg is None:
+            if inputs.avg is None:
                 self.avg = np.zeros((1,len(self.macdLine)))
             else:
-                self.avg = avg
+                self.avg = inputs.avg
             
         def buy(self,i):
             buyOpt = False
@@ -38,14 +38,14 @@ class Strategy:
         
     class MACD_Delta:
         
-        def __init__(self,data,info):
+        def __init__(self,data,inputs):
             data = data['MACD']
             self.macdLine = [n[0] for n in data]
             self.signalLine = [n[1] for n in data]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             self.avg = None
 
-            self.delay = info.delay
+            self.delay = inputs.delay
             
             if self.avg is None:
                 self.avg = np.zeros((len(self.macdLine),1))
@@ -88,24 +88,24 @@ class Strategy:
     
     class SMA_Delta:
         
-        def __init__(self,slow,fast,diff,diffAvg,info):
+        def __init__(self,data,inputs):
             self.slow = {}
             self.fast = {}
             
-            data = list(zip(*slow))
+            data = list(zip(*inputs.slow))
             self.slow['data'] = data[0]
             self.slow['delta'] = data[1]
             self.slow['slope'] = data[2]
             
-            data = list(zip(*fast))
+            data = list(zip(*inputs.fast))
             self.fast['data'] = data[0]
             self.fast['delta'] = data[1]
             self.fast['slope'] = data[2]
             
-            self.diff = diff
-            self.diffAvg = diffAvg
-            self.avg = info['avg']
-            self.std = info['std']
+            self.diff = inputs.diff
+            self.diffAvg = inputs.diffAvg
+            self.avg = inputs['avg']
+            self.std = inputs['std']
             
             self.inStd = False
             
@@ -133,7 +133,7 @@ class Strategy:
         
     class RSI:
         
-        def __init__(self,data):
+        def __init__(self,data,inputs):
             self.data = data
             
             [peaks,troughs]  = Utility.findExtrema(list(self.data),endsOpt=False)            
@@ -159,7 +159,7 @@ class Strategy:
     
     class SMA:
         
-        def __init__(self,data):
+        def __init__(self,data,inputs):
             data = list(zip(*data))
             self.data = data[0]
             self.delta = data[1]
@@ -183,8 +183,8 @@ class Strategy:
     
     class SMA_Crossing:
         
-        def __init__(self,settings):#data,data):
-            self.window = settings.window
+        def __init__(self,data,inputs):
+            self.window = inputs.window
             # self.openPrice = data['Open']
             # self.closePrice = data['Close']
             # self.data = data
@@ -207,9 +207,9 @@ class Strategy:
         
     class BB:
         
-        def __init__(self,price,data):
-            self.price = price
-            self.data = data
+        def __init__(self,data,inputs):
+            self.price = data['Close']
+            self.data = data['BB']
             
         def buy(self,i):
             buyOpt = False
@@ -229,16 +229,16 @@ class Strategy:
         
     class ATR:
         
-        def __init__(self,data,info):
-            self.data = data.ATR
+        def __init__(self,data,inputs):
+            self.atr = data.ATR
             
-            self.avg = info.avg
-            self.std = info.std
+            self.avg = inputs.avg
+            self.std = inputs.std
             
         def buy(self,i):
             buyOpt = False
             
-            if self.data[i-1] < self.avg + self.std:
+            if self.atr[i-1] < self.avg + self.std:
                 buyOpt = True
                     
             return buyOpt
@@ -246,14 +246,14 @@ class Strategy:
         def sell(self,i):
             sellOpt = False
             
-            if self.data[i-1] > self.avg + self.std:
+            if self.atr[i-1] > self.avg + self.std:
                 sellOpt = True
                 
             return sellOpt
         
     class ATR_BB:
         
-        def __init__(self,data):
+        def __init__(self,data,inputs):
             self.data = data['ATR']
             self.bb = data['ATR_BB']
             

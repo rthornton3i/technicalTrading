@@ -356,7 +356,7 @@ class Indicators:
         return pattern
     
     def movingAverage(data,window=20,avgType='simple',steepness=3,ignoreStart=True,outputAll=False,colors=None,plotDelta=False,ax=None,plotOpt=False):
-        prices = data
+        prices = data['Close']
         
         pattern = []
         meanPrice, deltaPrice, avgSlope = [],[],[]
@@ -561,7 +561,7 @@ class Indicators:
             
             return avg
                 
-        prices = data
+        prices = data['Close']
         
         pattern = []
         macd = []

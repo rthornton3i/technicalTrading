@@ -48,21 +48,15 @@ class Backtest:
         # self.endDate = pd.Timestamp(year=dt.now().year, month=dt.now().month, day=dt.now().day)
 
         self.initialFunds = 10000
+        self.inputs = self.Inputs()
 
-        # self.test()
         self.run(False, False)
 
-    ###########################################################################
-    def test(self):
-        stockFetch = Fetch(self.tickers, self.startDate)
-        self.Data = stockFetch.getPrices()
-
-    ###########################################################################
+    #=================================================================#
     def run(self, fetchOpt, writeOpt):
-        """"""
         if fetchOpt:
-            stockFetch = Fetch(self.tickers, self.startDate, self.endDate)
-            Data = stockFetch.getPrices()
+            fetch = Fetch(self.tickers, self.startDate, self.endDate)
+            Data = fetch.getPrices()
 
             if writeOpt:
                 with pd.ExcelWriter('data.xlsx') as writer:
@@ -74,9 +68,7 @@ class Backtest:
 
         Figure = {}
 
-        ######################################################################
-
-        self.inputs = self.Inputs()
+        #=================================================================#
 
         for ticker in self.tickers:
             tic = time()
@@ -88,65 +80,87 @@ class Backtest:
             else:
                 self.data = Data[ticker]                        
 
+            self.plotOpt = False
+            # Figure[ticker] = self.plotStrategy()
+
+            #=================================================================#
+
+            """ EXECUTE EXPLORATION """
+
+            self.setupInputs()
+            self.setupExplore(ticker,'MACD')
+
+            #=================================================================#
+
+            """ EXECUTE STRATEGY """
+
+            # self.executeIndicators()
+            # self.executeStrategy()
+            # self.executeOrders()
+            # self.executeRetrospective()
+
+            #=================================================================#
+
             toc = time() - tic
             print('Elapsed time for ' + ticker + ': ' + '{:.2f}'.format(toc) + ' sec')
-
-            ###################################################################
-            """ EXECUTE STRATEGY """
-            plotOpt = True
-
-            Figure[ticker] = self.plotStrategy(plotOpt)
-
-            self.executeIndicators()
-            self.executeStrategy(plotOpt)
-            self.executeOrders()
-            self.executeRetrospective(plotOpt)
-
-            ###################################################################
-            """ FOR EXPLORATION """
-
-            # self.inputs = {'stdev': []}
-
-            # self.setupExplore(ticker,'MACD_ATR_BBdiff')
-            # self.allResults = self.exploration(stdev=[0.5,0.75,1,1.25,1.4,1.5,1.6,1.75])
 
         self.Data = Data
         self.Figure = Figure
 
-    ###########################################################################
+    #=================================================================#
     
     def executeIndicators(self):
         """EXECUTE INDICATORS FOR STRATEGY"""
+        macd = self.inputs.macd
+        atr = self.inputs.atr
 
-        self.data['MACD'] = Indicators.macd(self.data,fast=5,slow=10,sig=7,avgType='simple')
-        self.data['ATR'] = Indicators.atr(self.data,window=14,avgType='exponential')
-        # data['SMA20'] = Indicators.movingAverage(data,window=10,avgType='simple')
-        # data['SMA50'] = Indicators.movingAverage(data,window=50,avgType='simple')
-        # data['SMA200'] = Indicators.movingAverage(data,window=200,avgType='simple')
-        # data['SMAe'] = Indicators.movingAverage(data,window=20,avgType='exponential',steepness=3)
-        # data['BB'] = Indicators.bollingerBands(data,window=20)
-        # data['RSI'] = Indicators.rsi(data,window=14,avgType='simple')
-        # data['AD'] = Indicators.accDist(data)
-        # data['VAP'] = Indicators.volumeAtPrice(data,numBins=25)
-        # data['AVG'] = Indicators.avgPrice(data['ATR'])
+        self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
+        self.data['Regression'] = Indicators.regression(self.data['Close'], curveType='logarithmic')
 
-        # Indicators.supportResistance(data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both',ax=ax,plotOpt=True)            
-        # Indicators.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
-        # Indicators.extremaGaps(data['Smooth'],minDuration=10,minPerc=0.1)
+        self.data['MACD'] = Indicators.macd(self.data,fast=macd.fast,slow=macd.slow,sig=macd.sig,avgType='simple')
+        # self.data['ATR'] = Indicators.atr(self.data,window=atr.window,avgType='exponential')
+        # self.data['SMA20'] = Indicators.movingAverage(self.data,window=10,avgType='simple')
+        # self.data['SMA50'] = Indicators.movingAverage(self.data,window=50,avgType='simple')
+        # self.data['SMA200'] = Indicators.movingAverage(self.data,window=200,avgType='simple')
+        # self.data['SMAs'] = Indicators.movingAverage(self.data,window=100,avgType='logarithmic',steepness=2,outputAll=True)#, colors=('tab:green'),ax=ax,plotOpt=self.plotOpt)
+        # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
+        # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],window=10,avgType='exponential')# ax=ax,plotOpt=self.plotOpt)
+        # self.data['SMAe'] = Indicators.movingAverage(self.data,window=20,avgType='exponential',steepness=3)
+        # self.data['BB'] = Indicators.bollingerBands(self.data,window=20)
+        # self.data['RSI'] = Indicators.rsi(self.data,window=14,avgType='simple')
+        # self.data['AD'] = Indicators.accDist(self.data)
+        # self.data['VAP'] = Indicators.volumeAtPrice(self.data,numBins=25)
+        # self.data['AVG'] = Indicators.avgPrice(self.data['ATR'])
 
-        # self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
-        # self.data['Regression'] = Indicators.regression(self.data['Close'], curveType='logarithmic')
+        # [_, mean, high] = list(zip(*self.data['BB']))
+        # self.data['ATR_BB'] = [m + ((h - m) * 1.75) for m, h in zip(mean, high)]
 
-    def executeStrategy(self, plotOpt):
-        """EXECUTE BUY/SELL STRATEGIES"""
+        # self.data['MACD_avg'] = Indicators.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))#,colors='tab:blue', ax=ax, plotDev=True, plotOpt=self.plotOpt)
+
+        # Indicators.supportResistance(self.data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both')#,ax=ax,plotOpt=True)            
+        # Indicators.trend(self.data['Close'],direction='up')#,ax=ax,plotOpt=True)
+        # Indicators.extremaGaps(self.data['Smooth'],minDuration=10,minPerc=0.1)
+
+    def executeStrategy(self):
+        """CALCULATE INDICTORS"""
 
         self.indicator = {}
-        self.indicator['MACD'] = Strategy.MACD_Delta(self.data,self.inputs.macd_delta)
-        self.indicator['ATR'] = Strategy.ATR(self.data,self.inputs.atr)
-
-        self.orders = Orders(self.initialFunds, runNull=True)
+        
+        # self.indicator['ATR'] = Strategy.ATR(self.data,self.inputs.atr)
+        # self.indicator['ATR_BB'] = Strategy.ATR_BB(self.data,self.inputs.atr)
+        # self.indicator['BB'] = Strategy.BB(self.data,self.inputs.atr)
+        # self.indicator['MACD'] = Strategy.MACD(self.data,self.inputs.atr)
+        self.indicator['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.inputs.macd)
+        # self.indicator['RSI'] = Strategy.RSI(self.data,self.inputs.atr)
+        # self.indicator['SMA'] = Strategy.SMA(self.data,self.inputs.atr)
+        # self.indicator['SMA_Crossing'] = Strategy.SMA_Crossing(self.data,self.inputs.atr)
+        # self.indicator['SMA_Delta'] = Strategy.SMA_Delta(self.data,self.inputs.atr)
 
     def executeOrders(self):
+        """EXECUTE ORDERS"""
+
+        self.orders = Orders(self.initialFunds, runNull=True)
+        
         seekBuy = True
         seekSell = False
 
@@ -156,14 +170,14 @@ class Backtest:
             date = self.data.index.values[i]
 
             if seekBuy:
-############### SET BUY CONSTRAINT
-                if self.indicator['MACD'].buy(i) and self.indicator['ATR'].buy(i):
+############### [USER INPUT]: SET BUY CONSTRAINT
+                if self.indicator['MACD_Delta'].buy(i):
                     buy = True
                     seekBuy = False
 
             if seekSell:
-############### SET BUY CONSTRAINT
-                if self.indicator['MACD'].sell(i) or self.indicator['ATR'].sell(i):
+############### [USER INPUT]: SET BUY CONSTRAINT
+                if self.indicator['MACD_Delta'].sell(i):
                     sell = True
                     seekSell = False
 
@@ -185,7 +199,9 @@ class Backtest:
             else:
                 self.orders.hold(self.data['Close'].iloc[i], date)
 
-    def executeRetrospective(self,plotOpt):
+    def executeRetrospective(self):
+        """ANALYZE ORDERS"""
+
         analyze = Analyze(self.orders)
         self.orders.info = analyze.analyze()
 
@@ -198,7 +214,7 @@ class Backtest:
         nulldates = [null[0] for null in nullFunds]
         nullvalue = [null[1] for null in nullFunds]
 
-        if plotOpt:
+        if self.plotOpt:
             dates = list(zip(*self.orders.value))[0]
 
             """NULL AND STRATEGY FUNDS"""
@@ -225,14 +241,15 @@ class Backtest:
         print('Strategy Funds:  $' + '{:,.0f}'.format(stratvalue[-1]))
         print('Null Funds:      $' + '{:,.0f}'.format(nullvalue[-1]))
 
-    def plotStrategy(self, plotOpt=True):
-        # Setup plots
+    def plotStrategy(self):
+        """SETUP PLOTS"""
+
         Figure = {}
         ax = None
-        if plotOpt:
+        if self.plotOpt:
             plt.close('all')
 
-            # Figure['Indicators'], self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+            Figure['Indicators'], self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
             Figure['Value'], self.valAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
 
             Utility.setPlot(self.valAxs[0], logscale=False,
@@ -246,115 +263,25 @@ class Backtest:
         ###################################################################
 
         # PLOT 1
-        if plotOpt:
-            pass
-            # ax = self.indAxs[0]
-            # Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
+        if self.plotOpt:
+            ax = self.indAxs[0]
+            Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
 
-            # ax.set_title('Price')
-            # ax.plot(self.data['Close'], linewidth=0.5)
-            # ax.plot(data['Smooth'],color='black',linewidth=1)
+            ax.set_title('Price')
+            ax.plot(self.data['Close'], linewidth=0.5)
+            # ax.plot(self.data['Smooth'],color='black',linewidth=1)
+            
+            ax.legend()
 
-        # self.data['SMAs'] = Indicators.movingAverage(self.data['Close'],
-        #                                           window=100,
-        #                                           avgType='logarithmic',
-        #                                           steepness=2,
-        #                                           outputAll=True,
-        #                                           colors=('tab:green'),ax=ax,plotOpt=plotOpt)
+            ax = self.indAxs[1]
+            Utility.setPlot(ax)
 
-        # self.data['SMAf'] = Indicators.movingAverage(self.data['Close'],
-        #                                           window=20,
-        #                                           avgType='logarithmic',
-        #                                           steepness=2,
-        #                                           outputAll=True,
-        #                                           colors=('tab:orange'),ax=ax,plotOpt=plotOpt)
-
-        if plotOpt:
-            pass
-            # ax.legend()
-
-        # Indicators.supportResistance(data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both',ax=ax,plotOpt=True)            
-        # Indicators.trend(data['Close'],direction='up',ax=ax,plotOpt=True)
-        # data['BB'] = Indicators.bollingerBands(data['Close'],window=20,avgType='simple',ax=ax,plotOpt=True)
-        # data['VAP'] = Indicators.volumeAtPrice(data,numBins=15,volumeType='all',integrated=True,ax=ax,plotOpt=True)
-
-        ##################################################################
-
-        # PLOT 2
-        if plotOpt:
-            pass
-            # ax = self.indAxs[1]
-            # Utility.setPlot(ax)
-
-            # ax.set_title('ATR')
-
-        # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
-        # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],
-        #                                                    window=10,
-        #                                                    avgType='exponential',
-        #                                                    ax=ax,plotOpt=plotOpt)
-
-        # [avg,std] = Indicators.avgPrice(self.data['SMA_Diff'],outputAll=True,ax=ax,plotDev=True,plotOpt=plotOpt)
-
-        # self.info['sma']['avg'] = avg[0]
-        # self.info['sma']['std'] = std*1.8
-
-        # Slow: 0.857
-        # Medium: 1.283
-        # Fast: 2.416
-        # Covid: 5.1
-        # self.data['ATR'] = Indicators.atr(self.data,
-        #                                 window=12,
-        #                                 avgType='logarithmic',
-        #                                 ax=ax, plotOpt=plotOpt)
-
-        # print('Mean ATR: ' + str(np.nanmean(self.data['ATR'])))
-
-        # self.data['BB'] = Indicators.bollingerBands(self.data['ATR'],
-        #                                           window=125,
-        #                                           avgType='median',
-        #                                           ax=ax, plotOpt=plotOpt)
-
-        # [_, mean, high] = list(zip(*self.data['BB']))
-        # self.data['ATR_BB'] = [m + ((h - m) * 1.75) for m, h in zip(mean, high)]
-
-        if plotOpt:
-            pass
-            # ax.plot(self.data.index.values, self.data['ATR_BB'])
-
-            ##################################################################
-
-        # PLOT 3
-        if plotOpt:
-            pass
-            # ax = self.indAxs[2]
-            # Utility.setPlot(ax)
-
-            # ax.set_title('MACD')
-
-        # Overall: 5-8-3-1
-        # Slow: 9-17-3-3 (9-14-7-4)
-        # Medium: 5-10-5-3 (5-8-5-3)
-        # Fast: 13-14-3-2 (13-17-7-3)
-        # Covid: 3-6-3-1 (3-4-5-1)
-        # self.data['MACD'] = Indicators.macd(self.data['Close'],
-        #                                   fast=13, slow=17, sig=7,
-        #                                   avgType='logarithmic',
-        #                                   ax=ax, plotOpt=plotOpt)
-
-        # self.data['MACD_avg'] = Indicators.avgPrice(
-        #     pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values),
-        #     colors='tab:blue', ax=ax, plotDev=True, plotOpt=plotOpt)
-
-        # self.info['delay'] = 3
-
-        if plotOpt:
-            pass
-            # ax.legend()
+            ax = self.indAxs[2]
+            Utility.setPlot(ax)
 
         return Figure
 
-    ###########################################################################
+    #=================================================================#
 
     def optimize(self):
         prices = self.data['Smooth']
@@ -384,159 +311,141 @@ class Backtest:
 
         return optFunds
 
-    ###########################################################################
+    #=================================================================#
+    
+    def setupInputs(self):
+####### [USER INPUT]: SET INPUTS TO EXPLORE
+        macd = self.inputs.macd
+        fields = ['fast','slow','sig','delay']
+        combinations = Utility.combinations(macd.fast,macd.slow,macd.sig,macd.delay)
+
+        combinationsCleaned = []
+        for ind,combo in enumerate(combinations):
+            if not combo[1] < combo[0]:
+                combinationsCleaned.append(combinations[ind])
+
+        unzippedCombinations = list(zip(*combinationsCleaned))
+        self.iters = len(unzippedCombinations[0])
+
+        self.exploreInputs = []
+        for i in range(self.iters):
+            self.exploreInputs.append(self.Inputs())
+
+            for ind,val in enumerate(fields):
+                setattr(self.exploreInputs[i].macd, val, unzippedCombinations[ind][i])
 
     def setupExplore(self, ticker, path):
-        tic = time()
-
         outdir = 'Files/' + path
         if not os.path.exists(outdir):
             os.mkdir(outdir)
 
-        dfIn = self.setupInputs()
+        self.inputs = []
 
-        start = 0
-        end = len(dfIn)
-        buffer = 0
+        # SINGLE PROCESSOR
+        # self.step = self.iters
+        # self.allResults = self.exploration(0)
 
-        dfStep = 1000
-        for i, x in enumerate(range(start, end, dfStep)):
-            if x > len(dfIn) - dfStep:
-                df = dfIn.iloc[x:]
-            else:
-                df = dfIn.iloc[x:x + dfStep]
-            # df = dfIn
+        # self.outputDf = Utility.obj2df(self.allResults)
+        # self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
 
-            with Pool(processes=mp.cpu_count()) as pool:
-                results = []
-                stepSize = int(np.ceil(len(df) / mp.cpu_count()))
-                for n in range(0, len(df), stepSize):
-                    if n > len(df) - stepSize:
-                        ins = df.iloc[n:]
-                    else:
-                        ins = df.iloc[n:n + stepSize]
+        # MULTIPLE PROCESSOR
+        with Pool(processes=mp.cpu_count()) as pool:
+            results = []
+            self.step = int(np.ceil(self.iters / mp.cpu_count()))
+            for n in range(0, self.iters, self.step):
+                results.append(pool.apply_async(self.exploration, [n]))
 
-                    keywords = {}
-                    for attr in self.inputs:
-                        keywords[attr] = getattr(ins, attr).tolist()
-
-                    results.append(pool.apply_async(self.exploration, kwds=keywords))
-
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
 
             [result.wait() for result in results]
-            allResults = [r.get() for r in results]
+            results = [r.get() for r in results]
 
-            self.outputDf = Utility.dicts2df(allResults)
-            self.outputDf.to_csv('Files/' + path + '/' + ticker + '_' + str(i + buffer) + '.csv')
+            allResults = []
+            for result in results:
+                allResults.extend(result)
 
-        toc = time() - tic
-        print('Runtime: ' + str(toc))
+            self.outputDf = Utility.obj2df(allResults)
+            self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
 
-    def setupInputs(self):
-        inputs = self.inputs
+    def exploration(self,segment):
+        out = []
 
-        # fastRng = list(range(3,14,2))
-        # sigRng = list(range(3,12,2))
-        # delayRng = list(range(1,5))
-        # slowRng = np.unique([int(np.round(n/10 * fast)) for n in range(11,22,2)])
+        for i in range(segment,self.step+segment):
+            print(str(i+1),'/',str(self.step+segment))
 
-        for stdev in [0.5, 0.75, 1, 1.25, 1.4, 1.5, 1.6, 1.75, 2, 2.25, 2.5]:
-            var = [stdev]
-            for i, attr in enumerate(inputs):
-                inputs[attr].append(var[i])
+            if i >= self.iters:
+                break
 
-        dfIn = pd.DataFrame.from_dict(inputs)
+            self.inputs = self.exploreInputs[i]
 
-        return dfIn
+            self.executeIndicators()
+            self.executeStrategy()
+            self.executeOrders()
+            self.executeRetrospective()
 
-    def exploration(self, **kwargs):
-        outputs = {'stdev': []}
+########### [USER INPUT]: SET FIELDS
+            outputs = self.Outputs(self.Inputs.MACD())
 
-        outputs['numSell'] = []
-        outputs['exposure'] = []
-        outputs['drawdown'] = []
-        outputs['winLoss'] = []
-        outputs['value'] = []
-        outputs['zzz'] = []
+            outputs.fields.fast = self.inputs.macd.fast
+            outputs.fields.slow = self.inputs.macd.slow
+            outputs.fields.sig = self.inputs.macd.sig
+            outputs.fields.delay = self.inputs.macd.delay
 
-        for stdev in kwargs['stdev']:
-            # zip(kwargs['stdev']):
+            outputs.numSell = self.orders.info.numSells
+            outputs.exposure = self.orders.info.exposure
+            outputs.drawdown = self.orders.info.maxDrawdown
+            outputs.winLoss = self.orders.info.winLoss
+            outputs.value = self.orders.value[-1][1]
 
-            # self.data['SMAs'] = Indicators.movingAverage(self.data['Close'],
-            #                                            window=windowSlow,
-            #                                            avgType=avgType,
-            #                                            steepness=steepness,
-            #                                            outputAll=True)
+            out.append(outputs)
 
-            # self.data['SMAf'] = Indicators.movingAverage(self.data['Close'],
-            #                                            window=windowFast,
-            #                                            avgType=avgType,
-            #                                            steepness=steepness,
-            #                                            outputAll=True)
-
-            # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
-            # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],
-            #                                                    window=10,
-            #                                                    avgType='exponential')
-            # [avg,std] = Indicators.avgPrice(self.data['SMA_Diff'],outputAll=True)
-
-            # self.info['sma']['avg'] = avg[0]
-            # self.info['sma']['std'] = std*stdev
-
-            self.data['MACD'] = Indicators.macd(self.data['Close'],
-                                              fast=5, slow=8, sig=3,
-                                              avgType='logarithmic')
-
-            self.data['MACD_avg'] = Indicators.avgPrice(
-                pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))
-
-            self.info['delay'] = 1
-
-            self.data['ATR'] = Indicators.atr(self.data,
-                                            window=12,
-                                            avgType='logarithmic')
-
-            self.data['BB'] = Indicators.bollingerBands(self.data['ATR'],
-                                                      window=125,
-                                                      avgType='median')
-
-            [_, mean, high] = list(zip(*self.data['BB']))
-            self.data['ATR_BB'] = [m + ((h - m) * stdev) for m, h in zip(mean, high)]
-
-            order = self.setupStrategy()
-
-            v = [stdev]
-            var = [stdev,
-                   order.info.numSells,
-                   order.info.exposure,
-                   order.info.maxDrawdown,
-                   order.info.winLoss,
-                   order.value[-1][1],
-                   '-'.join([str(n) for n in v])]
-
-            for i, attr in enumerate(outputs):
-                outputs[attr].append(var[i])
-
-        return outputs
-
+        return out
+    
+    #=================================================================#
+    #=================================================================#
+    
     class Inputs:
         def __init__(self):
             self.atr = self.ATR()
-            self.macd_delta = self.MACD_Delta()
+            self.macd = self.MACD()
 
         class ATR:
             def __init__(self):
                 self.avg = 14
                 self.std = 3
+                self.window = 10
 
-        class MACD_Delta:
+        class MACD:
             def __init__(self):
-                self.delay = 1
+                self.delay = np.arange(1,6)
+                self.fast = np.arange(2,21,2)
+                self.slow = np.arange(5,35,4)
+                self.sig = np.arange(3,19,3)
 
-###############################################################################
-###############################################################################
+                # self.delay = np.arange(1,2)
+                # self.fast = np.arange(2,7)
+                # self.slow = np.arange(5,13,4)
+                # self.sig = np.arange(7,15,2)
+
+    class Outputs:
+        def __init__(self,obj):
+            self.fields = self.Fields(obj)
+            self.numSell = []
+            self.exposure = []
+            self.drawdown = []
+            self.winLoss = []
+            self.value = []
+
+        class Fields:
+            def __init__(self,obj):
+                attr = [attr for attr, val in obj.__dict__.items()]
+                
+                for att in attr:
+                    setattr(self,att,[])
+
+#=================================================================#
+#=================================================================#
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
