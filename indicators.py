@@ -433,7 +433,7 @@ class Indicators:
         return pattern
     
     def rsi(data,window=14,avgType=None,ignoreStart=True):
-        prices = data
+        prices = data['Close']
         
         pattern = []
         rsi = []
@@ -521,16 +521,18 @@ class Indicators:
         return pattern
     
     def bollingerBands(data,window=20,avgType='simple',ignoreStart=True,ax=None,plotOpt=False):
+        prices = data['Close']
+
         pattern = []
-        for i in range(len(data)):
+        for i in range(len(prices)):
             if ignoreStart and i < window:
                 meanPrice = np.nan
                 stdPrice = np.nan
             else:
                 if i <= window-1:
-                    price = data[:i+1]
+                    price = prices[:i+1]
                 else:
-                    price = data[i-window+1:i+1]
+                    price = prices[i-window+1:i+1]
                 
                 meanPrice = Utility.avg(price,avgType=avgType)
                 stdPrice = np.std(price)

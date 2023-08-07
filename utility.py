@@ -155,7 +155,11 @@ class Utility:
 
         return 1 if norm > 1 else -1 if norm < -1 else norm
     
-    def combinations(*args):        
+    def combinations(*args):   
+        # EXTRACT INPUTS FROM LIST OF INPUTS     
+        if len(args) == 1:
+            args = args[0]
+
         a = args[0]
         b = args[1]
 

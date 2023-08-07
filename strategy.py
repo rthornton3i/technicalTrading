@@ -9,14 +9,13 @@ class Strategy:
     class MACD:
         
         def __init__(self,data,inputs):
-            self.macdLine = [n[0] for n in data]
-            self.signalLine = [n[1] for n in data]
+            tech = data['MACD']
+
+            self.macdLine = [n[0] for n in tech]
+            self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             
-            if inputs.avg is None:
-                self.avg = np.zeros((1,len(self.macdLine)))
-            else:
-                self.avg = inputs.avg
+            self.avg = data['MACD_Avg']
             
         def buy(self,i):
             buyOpt = False
@@ -85,56 +84,11 @@ class Strategy:
                 sellOpt = True
                     
             return sellOpt
-    
-    class SMA_Delta:
-        
-        def __init__(self,data,inputs):
-            self.slow = {}
-            self.fast = {}
-            
-            data = list(zip(*inputs.slow))
-            self.slow['data'] = data[0]
-            self.slow['delta'] = data[1]
-            self.slow['slope'] = data[2]
-            
-            data = list(zip(*inputs.fast))
-            self.fast['data'] = data[0]
-            self.fast['delta'] = data[1]
-            self.fast['slope'] = data[2]
-            
-            self.diff = inputs.diff
-            self.diffAvg = inputs.diffAvg
-            self.avg = inputs['avg']
-            self.std = inputs['std']
-            
-            self.inStd = False
-            
-        def buy(self,i):
-            buyOpt = False
-            
-            slopeDown = self.diffAvg[i-2] > self.diffAvg[i-1]
-            belowDev = self.diffAvg[i-1] < self.avg - self.std
-            
-            if not slopeDown and not belowDev:
-                buyOpt = True
-                    
-            return buyOpt
-        
-        def sell(self,i):
-            sellOpt = False
-            
-            slopeDown = self.diffAvg[i-2] > self.diffAvg[i-1]
-            belowDev = self.diffAvg[i-1] < self.avg - self.std
-            
-            if slopeDown and belowDev:
-                sellOpt = True
-                    
-            return sellOpt
         
     class RSI:
         
         def __init__(self,data,inputs):
-            self.data = data
+            self.data = data['RSI']
             
             [peaks,troughs]  = Utility.findExtrema(list(self.data),endsOpt=False)            
             self.extrema = np.asarray(sorted(np.concatenate((peaks,troughs)),key=lambda x:x[0]))
@@ -160,10 +114,12 @@ class Strategy:
     class SMA:
         
         def __init__(self,data,inputs):
-            data = list(zip(*data))
-            self.data = data[0]
-            self.delta = data[1]
-            self.slope = data[2]
+            tech = data['SMA']
+            
+            tech = list(zip(*tech))
+            self.data = tech[0]
+            self.delta = tech[1]
+            self.slope = tech[2]
             
         def buy(self,i):
             buyOpt = False
@@ -184,10 +140,9 @@ class Strategy:
     class SMA_Crossing:
         
         def __init__(self,data,inputs):
-            self.window = inputs.window
-            # self.openPrice = data['Open']
-            # self.closePrice = data['Close']
-            # self.data = data
+            tech = data['SMA']
+            tech = list(zip(*tech))
+            self.data = tech[0]
             
         def buy(self,i):
             buyOpt = False
