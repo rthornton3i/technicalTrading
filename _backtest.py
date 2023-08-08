@@ -49,6 +49,7 @@ class Backtest:
 
         self.initialFunds = 10000
         self.inputs = self.Inputs()
+        self.plotOpt = True
 
         self.run(False, False)
 
@@ -78,8 +79,7 @@ class Backtest:
             else:
                 self.data = Data[ticker]                        
 
-            self.plotOpt = False
-            # Figure[ticker] = self.plotStrategy()
+            Figure[ticker] = self.plotStrategy()
 
             tic = time()
 
@@ -87,10 +87,10 @@ class Backtest:
 
             """ EXECUTE EXPLORATION """
 
-            # self.exploreIndicators = ['MACD']
+            # self.exploreIndicators = ['SMA']
 
             # self.setupInputs()
-            # self.setupExplore(ticker,'MACD')
+            # self.setupExplore(ticker,'SMA')
 
             #=================================================================#
 
@@ -157,30 +157,31 @@ class Backtest:
         """EXECUTE INDICATORS FOR STRATEGY"""
         macd = self.inputs.macd
         atr = self.inputs.atr
+        sma = self.inputs.sma
 
         self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
         self.data['Regression'] = Indicators.regression(self.data['Close'], curveType='logarithmic')
 
         self.data['MACD'] = Indicators.macd(self.data,fast=macd.fast,slow=macd.slow,sig=macd.sig,avgType='simple')
         self.data['ATR'] = Indicators.atr(self.data,window=atr.window,avgType='exponential')
-        self.data['SMA'] = Indicators.movingAverage(self.data,window=100,avgType='logarithmic',steepness=2,outputAll=True)#, colors=('tab:green'),ax=ax,plotOpt=self.plotOpt)
-        # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
-        # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],window=10,avgType='exponential')# ax=ax,plotOpt=self.plotOpt)
-        self.data['SMAe'] = Indicators.movingAverage(self.data,window=20,avgType='exponential',steepness=3)
+        self.data['SMA'] = Indicators.movingAverage(self.data,window=sma.window,avgType=sma.avgType,steepness=2,outputAll=True,colors=('tab:green'),ax=self.indAxs[1],plotOpt=self.plotOpt)
         self.data['BB'] = Indicators.bollingerBands(self.data,window=20)
         self.data['RSI'] = Indicators.rsi(self.data,window=14,avgType='simple')
         self.data['AD'] = Indicators.accDist(self.data)
         self.data['VAP'] = Indicators.volumeAtPrice(self.data,numBins=25)
         self.data['AVG'] = Indicators.avgPrice(self.data['ATR'])
 
-        [_, mean, high] = list(zip(*self.data['BB']))
-        self.data['ATR_BB'] = [m + ((h - m) * 1.75) for m, h in zip(mean, high)]
+        # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
+        # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],window=10,avgType='exponential')# ax=ax,plotOpt=self.plotOpt)
+
+        # [_, mean, high] = list(zip(*self.data['BB']))
+        # self.data['ATR_BB'] = [m + ((h - m) * 1.75) for m, h in zip(mean, high)]
 
         self.data['MACD_Avg'] = Indicators.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))#,colors='tab:blue', ax=ax, plotDev=True, plotOpt=self.plotOpt)
 
-        Indicators.supportResistance(self.data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both')#,ax=ax,plotOpt=True)            
-        Indicators.trend(self.data['Close'],direction='up')#,ax=ax,plotOpt=True)
-        Indicators.extremaGaps(self.data['Smooth'],minDuration=10,minPerc=0.1)
+        # Indicators.supportResistance(self.data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both')#,ax=ax,plotOpt=True)            
+        # Indicators.trend(self.data['Close'],direction='up')#,ax=ax,plotOpt=True)
+        # Indicators.extremaGaps(self.data['Smooth'],minDuration=10,minPerc=0.1)
 
     def executeStrategy(self):
         """CALCULATE INDICTORS"""
@@ -188,13 +189,13 @@ class Backtest:
         self.strategy = {}
         
         self.strategy['ATR'] = Strategy.ATR(self.data,self.inputs.atr)
-        self.strategy['ATR_BB'] = Strategy.ATR_BB(self.data,self.inputs.atr)
+        # self.strategy['ATR_BB'] = Strategy.ATR_BB(self.data,self.inputs.atr)
         self.strategy['BB'] = Strategy.BB(self.data,self.inputs.bb)
         self.strategy['MACD'] = Strategy.MACD(self.data,self.inputs.macd)
         self.strategy['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.inputs.macd)
         self.strategy['RSI'] = Strategy.RSI(self.data,self.inputs.rsi)
         self.strategy['SMA'] = Strategy.SMA(self.data,self.inputs.sma)
-        self.strategy['SMA_Crossing'] = Strategy.SMA_Crossing(self.data,self.inputs.sma)
+        # self.strategy['SMA_Crossing'] = Strategy.SMA_Crossing(self.data,self.inputs.sma)
 
     def executeOrders(self):
         """EXECUTE ORDERS"""
@@ -211,13 +212,13 @@ class Backtest:
 
             if seekBuy:
 ############### [USER INPUT]: SET BUY CONSTRAINT
-                if self.strategy['MACD_Delta'].buy(i):
+                if self.strategy['SMA'].buy(i):
                     buy = True
                     seekBuy = False
 
             if seekSell:
 ############### [USER INPUT]: SET BUY CONSTRAINT
-                if self.strategy['MACD_Delta'].sell(i):
+                if self.strategy['SMA'].sell(i):
                     sell = True
                     seekSell = False
 
@@ -293,13 +294,14 @@ class Backtest:
 
         combinations = Utility.combinations(combos)
 
-        # REMOVE NONCOMPLIANT DATA
-        combinationsCleaned = []
-        for ind,combo in enumerate(combinations):
-            if not combo[1] < combo[0]:
-                combinationsCleaned.append(combinations[ind])
+####### [USER INPUT]: REMOVE NONCOMPLIANT DATA
+        # combinationsCleaned = []
+        # for ind,combo in enumerate(combinations):
+        #     if not combo[1] < combo[0]:
+        #         combinationsCleaned.append(combinations[ind])
+        # combinations = combinationsCleaned
 
-        unzippedCombinations = list(zip(*combinationsCleaned))
+        unzippedCombinations = list(zip(*combinations))
         self.iters = len(unzippedCombinations[0])
 
         self.exploreInputs = []
@@ -320,31 +322,31 @@ class Backtest:
         self.inputs = []
 
         # SINGLE PROCESSOR
-        self.step = self.iters
-        self.allResults = self.exploration(0)
+        # self.step = self.iters
+        # self.allResults = self.exploration(0)
 
-        self.outputDf = Utility.obj2df(self.allResults)
-        self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
+        # self.outputDf = Utility.obj2df(self.allResults)
+        # self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
 
         # MULTIPLE PROCESSOR
-        # with Pool(processes=mp.cpu_count()) as pool:
-        #     results = []
-        #     self.step = int(np.ceil(self.iters / mp.cpu_count()))
-        #     for n in range(0, self.iters, self.step):
-        #         results.append(pool.apply_async(self.exploration, [n]))
+        with Pool(processes=mp.cpu_count()) as pool:
+            results = []
+            self.step = int(np.ceil(self.iters / mp.cpu_count()))
+            for n in range(0, self.iters, self.step):
+                results.append(pool.apply_async(self.exploration, [n]))
 
-        #     pool.close()
-        #     pool.join()
+            pool.close()
+            pool.join()
 
-        #     [result.wait() for result in results]
-        #     results = [r.get() for r in results]
+            [result.wait() for result in results]
+            results = [r.get() for r in results]
 
-        #     allResults = []
-        #     for result in results:
-        #         allResults.extend(result)
+            allResults = []
+            for result in results:
+                allResults.extend(result)
 
-        #     self.outputDf = Utility.obj2df(allResults)
-        #     self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
+            self.outputDf = Utility.obj2df(allResults)
+            self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
 
     def exploration(self,segment):
         out = []
@@ -369,10 +371,12 @@ class Backtest:
             outputs = self.Outputs(indicators)
 
 ########### [USER INPUT]: SET FIELDS
-            outputs.fields.fast = self.inputs.macd.fast
-            outputs.fields.slow = self.inputs.macd.slow
-            outputs.fields.sig = self.inputs.macd.sig
-            outputs.fields.delay = self.inputs.macd.delay
+            # outputs.fields.fast = self.inputs.macd.fast
+            # outputs.fields.slow = self.inputs.macd.slow
+            # outputs.fields.sig = self.inputs.macd.sig
+            # outputs.fields.delay = self.inputs.macd.delay
+            outputs.fields.window = self.inputs.sma.window
+            outputs.fields.avgType = self.inputs.sma.avgType
 
             outputs.numSell = self.orders.info.numSells
             outputs.exposure = self.orders.info.exposure
@@ -462,7 +466,17 @@ class Backtest:
 
         class SMA:
             def __init__(self):
-                pass
+                # self.window = []
+                # for w in [np.arange(3,16,3),np.arange(20,51,5)]:
+                #     self.window.extend(w)
+
+                # self.avgType = ['simple','exponential','logarithmic','weighted']
+
+                # self.window = [5]
+                # self.avgType = ['exponential']
+
+                self.window = 12
+                self.avgType = 'logarithmic'
 
     class Outputs:
         def __init__(self,*objs):

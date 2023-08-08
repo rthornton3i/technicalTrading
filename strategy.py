@@ -114,12 +114,13 @@ class Strategy:
     class SMA:
         
         def __init__(self,data,inputs):
-            tech = data['SMA']
+            # tech = data['SMA']
+            self.data = data['SMA']
             
-            tech = list(zip(*tech))
-            self.data = tech[0]
-            self.delta = tech[1]
-            self.slope = tech[2]
+            # tech = list(zip(*tech))
+            # self.data = tech[0]
+            # self.delta = tech[1]
+            # self.slope = tech[2]
             
         def buy(self,i):
             buyOpt = False
