@@ -7,7 +7,6 @@ class Analyze:
 
         self.value = self.orders.value
         self.nullValue = self.orders.nullValue
-        self.runNull = self.orders.runNull
 
     def analyze(self):
         info = self.orders.info
@@ -20,9 +19,8 @@ class Analyze:
         [info.drawdown, info.maxDrawdown] = self.calcDrawdown(self.value)
         info.winLoss = self.winLossRate(info.earnings)
         
-        if self.runNull:
-            info.indexDiff = self.calcIndexDiff()
-            [info.nullDrawdown, info.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
+        info.indexDiff = self.calcIndexDiff()
+        [info.nullDrawdown, info.maxNullDrawdown] = self.calcDrawdown(self.nullValue)
 
         return info
             

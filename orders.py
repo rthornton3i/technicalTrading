@@ -3,12 +3,10 @@ import numpy as np
 
 class Orders:
     
-    def __init__(self,initialFunds,runNull=False):
+    def __init__(self,initialFunds):
         self.shares = 0
         self.cash = initialFunds
         self.value = []
-        
-        self.runNull = runNull
         
         self.initBuy = False
         self.nullShares = 0
@@ -27,9 +25,6 @@ class Orders:
         self.cash -= self.shares * buyPrice
         self.value.append((date,self.cash + (self.shares * buyPrice)))
         
-        self.initBuy = True
-        self.calcNull(buyPrice,date)
-        
         self.info.numBuys += 1
         self.info.buyDate = date
     
@@ -40,27 +35,26 @@ class Orders:
         self.shares = 0
         self.value.append((date,self.cash))
         
-        self.calcNull(sellPrice,date)
-        
         self.info.numSells += 1
         self.info.earnings.append((self.sellPrice - self.buyPrice) / self.buyPrice)
         self.info.holdPeriod.append(np.timedelta64(date - self.info.buyDate,'D').astype(int))
         
     def hold(self,curPrice,date):
         self.value.append((date,self.cash + (self.shares * curPrice)))
-        
-        self.calcNull(curPrice,date)
     
-    def calcNull(self,price,date):
-        if self.runNull:
-            if self.nullShares == 0 and self.initBuy:
-                self.nullShares += math.floor(self.nullCash / price)
-                self.nullCash -= self.nullShares * price
-                self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
-            elif self.initBuy:
-                self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
-            else:
-                self.nullValue.append((date,self.nullCash))
+    def calcNull(self,price,date,buy=False,sell=False,hold=False):
+        if buy:
+            self.nullShares += math.floor(self.nullCash / price)
+            self.nullCash -= self.nullShares * price
+            self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
+        
+        if hold:
+            self.nullValue.append((date,self.nullCash + (self.nullShares * price)))
+        
+        if sell:
+            self.nullCash += self.nullShares * price
+            self.nullShares = 0
+            self.nullValue.append((date,self.nullCash))
 
     class Info:
         
