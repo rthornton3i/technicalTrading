@@ -15,12 +15,10 @@ class Strategy:
             self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
             
-            self.avg = data['MACD_Avg']
-            
         def buy(self,i):
             buyOpt = False
             
-            if self.macdLine[i-1] < self.avg[i-1] and self.signalLine[i-1] < self.avg[i-1]:
+            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
                 if self.diff[i-2] < 0 and self.diff[i-1] > 0:
                     buyOpt = True
                     
@@ -29,7 +27,7 @@ class Strategy:
         def sell(self,i):
             sellOpt = False
             
-            if self.macdLine[i-1] > self.avg[i-1] and self.signalLine[i-1] > self.avg[i-1]:
+            if self.macdLine[i-1] > 0 and self.signalLine[i-1] > 0:
                 if self.diff[i-2] > 0 and self.diff[i-1] < 0:
                     sellOpt = True
                     
@@ -38,26 +36,21 @@ class Strategy:
     class MACD_Delta:
         
         def __init__(self,data,inputs):
-            data = data['MACD']
-            self.macdLine = [n[0] for n in data]
-            self.signalLine = [n[1] for n in data]
+            tech = data['MACD']
+
+            self.macdLine = [n[0] for n in tech]
+            self.signalLine = [n[1] for n in tech]
             self.diff = [m-s for m,s in zip(self.macdLine,self.signalLine)]
-            self.avg = None
 
             self.delay = inputs.delay
-            
-            if self.avg is None:
-                self.avg = np.zeros((len(self.macdLine),1))
-            else:
-                self.avg = data['MACD_avg']
             
         def buy(self,i):
             buyOpt = False
             
-            if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
-                return buyOpt
+            # if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
+            #     return buyOpt
         
-            if self.macdLine[i-1] < self.avg[i-1] and self.signalLine[i-1] < self.avg[i-1]:
+            if self.macdLine[i-1] < 0 and self.signalLine[i-1] < 0:
                 for n in range(1,self.delay+1):
                     if abs(self.diff[i-n]) < abs(self.diff[i-n-1]):
                         continue
@@ -71,10 +64,10 @@ class Strategy:
         def sell(self,i):
             sellOpt = False
             
-            if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
-                return sellOpt
+            # if np.isnan(self.macdLine[i-1]) or np.isnan(self.signalLine[i-1]):
+            #     return sellOpt
             
-            if self.macdLine[i-1] > self.avg[i-1] and self.signalLine[i-1] > self.avg[i-1]:
+            if self.macdLine[i-1] > 0 and self.signalLine[i-1] > 0:
                 for n in range(1,self.delay+1):
                     if abs(self.diff[i-n]) < abs(self.diff[i-n-1]):
                         continue
