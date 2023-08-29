@@ -38,13 +38,19 @@ class Fetch:
         else:
             self.endDate = endDate
         
-    def getPrices(self,splitOpt=False,divOpt=False):
+    def getPrices(self,increment='daily',splitOpt=False,divOpt=False):
         data = {}
         for ticker in self.tickers:
             while True:
                 # data[ticker],_ = self.ts.get_daily_adjusted(symbol=ticker,outputsize='full')
                 try:
-                    data[ticker],_ = self.ts.get_daily(symbol=ticker,outputsize='full')
+                    if increment == 'daily':
+                        data[ticker],_ = self.ts.get_daily(symbol=ticker,outputsize='full')
+                    elif increment == 'weekly':
+                        data[ticker],_ = self.ts.get_weekly(symbol=ticker)
+                    elif increment == 'monthly':
+                        data[ticker],_ = self.ts.get_monthly(symbol=ticker)
+
                     print('Fetched: ' + ticker + '...')
                     break
                 except ValueError:
