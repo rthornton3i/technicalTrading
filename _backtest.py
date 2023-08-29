@@ -23,7 +23,7 @@ import warnings
 class Backtest:
 
     def __init__(self):
-        self.tickers = ['SPY'] #['SPY','QQQ','DIA']
+        self.tickers = ['SPY','QQQ','DIA']#['SPY','QQQ','DIA']
 
         # Slow
         # self.startDate = pd.Timestamp(year=2012,month=4,day=1)
@@ -41,20 +41,24 @@ class Backtest:
         # self.startDate = pd.Timestamp(year=2019,month=7,day=1)
         # self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
 
-        self.startDate = pd.Timestamp(year=2013,month=7,day=8)
-        # self.startDate = pd.Timestamp(year=dt.now().year-10,month=dt.now().month,day=dt.now().day)
+        # Housing Crisis
+        self.startDate = pd.Timestamp(year=2007,month=1,day=1)
+        self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
 
-        self.endDate = pd.Timestamp(year=2023,month=7,day=7)
-        # self.endDate = pd.Timestamp(year=dt.now().year, month=dt.now().month, day=dt.now().day)
+        # Excel
+        # self.startDate = pd.Timestamp(year=2013,month=7,day=8)
+        # self.endDate = pd.Timestamp(year=2023,month=7,day=7)
 
         self.initialFunds = 10000
         self.inputs = self.Inputs()
-        self.plotOpt = True
 
-        self.run(False, False)
+        self.plotOpt = True
+        self.exploration
+
+        self.run(fetchOpt=True)
 
     #=================================================================#
-    def run(self, fetchOpt, writeOpt):
+    def run(self, fetchOpt=False, writeOpt=False):
         if fetchOpt:
             fetch = Fetch(self.tickers, self.startDate, self.endDate)
             Data = fetch.getPrices()
@@ -83,14 +87,16 @@ class Backtest:
 
             tic = time()
 
+            print('Running: ' + ticker)
+
             #=================================================================#
 
             """ EXECUTE EXPLORATION """
 
-            # self.exploreIndicators = ['SMA']
+            # self.exploreIndicators = ['MACD_Delta']
 
             # self.setupInputs()
-            # self.setupExplore(ticker,'SMA')
+            # self.setupExplore(ticker,'MACD_Delta')
 
             #=================================================================#
 
@@ -116,10 +122,9 @@ class Backtest:
 
         Figure = {}
         ax = None
-        if self.plotOpt:
-            plt.close('all')
+        plt.close('all')            
 
-            Figure['Indicators'], self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+        if self.plotOpt:
             Figure['Value'], self.valAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
 
             Utility.setPlot(self.valAxs[0], logscale=False,
@@ -128,26 +133,25 @@ class Backtest:
 
             for ax in self.valAxs:
                 ax.grid()
-                ax.grid(axis='x', linestyle='--')
+                ax.grid(axis='x', linestyle='--')\
 
-        ###################################################################
+        # if self.plotOpt:
+        #     Figure['Indicators'], self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
 
-        # PLOT 1
-        if self.plotOpt:
-            ax = self.indAxs[0]
-            Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
+        #     ax = self.indAxs[0]
+        #     Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
 
-            ax.set_title('Price')
-            ax.plot(self.data['Close'], linewidth=0.5)
-            # ax.plot(self.data['Smooth'],color='black',linewidth=1)
+        #     ax.set_title('Price')
+        #     ax.plot(self.data.Close, linewidth=0.5)
+        #     # ax.plot(self.data.Smooth,color='black',linewidth=1)
             
-            ax.legend()
+        #     ax.legend()
 
-            ax = self.indAxs[1]
-            Utility.setPlot(ax)
+        #     ax = self.indAxs[1]
+        #     Utility.setPlot(ax)
 
-            ax = self.indAxs[2]
-            Utility.setPlot(ax)
+        #     ax = self.indAxs[2]
+        #     Utility.setPlot(ax)
 
         return Figure
 
@@ -155,52 +159,52 @@ class Backtest:
     
     def executeIndicators(self):
         """EXECUTE INDICATORS FOR STRATEGY"""
-        macd = self.inputs.macd
+        macd = self.inputs.macd_delta
         atr = self.inputs.atr
         sma = self.inputs.sma
 
-        self.data['Smooth'] = Utility.smooth(list(self.data['Close']), avgType='simple', window=5, iterations=1)
-        self.data['Regression'] = Indicators.regression(self.data['Close'], curveType='logarithmic')
+        # self.data['Smooth'] = Utility.smooth(list(self.data.Close), avgType='simple', window=5, iterations=1)
+        # self.data['Regression'] = Indicators.regression(self.data.Close, curveType='logarithmic')
 
         self.data['MACD'] = Indicators.macd(self.data,fast=macd.fast,slow=macd.slow,sig=macd.sig,avgType='simple')
-        self.data['ATR'] = Indicators.atr(self.data,window=atr.window,avgType='exponential')
-        self.data['SMA'] = Indicators.movingAverage(self.data,window=sma.window,avgType=sma.avgType,steepness=2,outputAll=True,colors=('tab:green'),ax=self.indAxs[1],plotOpt=self.plotOpt)
-        self.data['BB'] = Indicators.bollingerBands(self.data,window=20)
-        self.data['RSI'] = Indicators.rsi(self.data,window=14,avgType='simple')
-        self.data['AD'] = Indicators.accDist(self.data)
-        self.data['VAP'] = Indicators.volumeAtPrice(self.data,numBins=25)
-        self.data['AVG'] = Indicators.avgPrice(self.data['ATR'])
+        # self.data['ATR'] = Indicators.atr(self.data,window=atr.window,avgType='exponential')
+        # self.data['SMA'] = Indicators.movingAverage(self.data,window=sma.window,avgType=sma.avgType,steepness=2,outputAll=True,colors=('tab:green'),ax=self.indAxs[1],plotOpt=self.plotOpt)
+        # self.data['BB'] = Indicators.bollingerBands(self.data,window=20)
+        # self.data['RSI'] = Indicators.rsi(self.data,window=14,avgType='simple')
+        # self.data['AD'] = Indicators.accDist(self.data)
+        # self.data['VAP'] = Indicators.volumeAtPrice(self.data,numBins=25)
+        # self.data['AVG'] = Indicators.avgPrice(self.data['ATR'])
 
-        # self.data['SMA_Diff'] = [n / self.data['Close'].iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
+        # self.data['SMA_Diff'] = [n / self.data.Close.iloc[i] for i,n in enumerate(pd.Series(list(zip(*self.data['SMAf']))[0]) - pd.Series(list(zip(*self.data['SMAs']))[0]))]
         # self.data['SMA_Diff_Avg'] = Indicators.movingAverage(self.data['SMA_Diff'],window=10,avgType='exponential')# ax=ax,plotOpt=self.plotOpt)
 
         # [_, mean, high] = list(zip(*self.data['BB']))
         # self.data['ATR_BB'] = [m + ((h - m) * 1.75) for m, h in zip(mean, high)]
 
-        self.data['MACD_Avg'] = Indicators.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))#,colors='tab:blue', ax=ax, plotDev=True, plotOpt=self.plotOpt)
+        # self.data['MACD_Avg'] = Indicators.avgPrice(pd.Series(list(zip(*self.data['MACD']))[0], index=self.data.index.values))#,colors='tab:blue', ax=ax, plotDev=True, plotOpt=self.plotOpt)
 
-        # Indicators.supportResistance(self.data['Smooth'],thresh=0.05,minNum=3,minDuration=10,style='both')#,ax=ax,plotOpt=True)            
-        # Indicators.trend(self.data['Close'],direction='up')#,ax=ax,plotOpt=True)
-        # Indicators.extremaGaps(self.data['Smooth'],minDuration=10,minPerc=0.1)
+        # Indicators.supportResistance(self.data.Smooth,thresh=0.05,minNum=3,minDuration=10,style='both')#,ax=ax,plotOpt=True)            
+        # Indicators.trend(self.data.Close,direction='up')#,ax=ax,plotOpt=True)
+        # Indicators.extremaGaps(self.data.Smooth,minDuration=10,minPerc=0.1)
 
     def executeStrategy(self):
         """CALCULATE INDICTORS"""
 
         self.strategy = {}
         
-        self.strategy['ATR'] = Strategy.ATR(self.data,self.inputs.atr)
+        # self.strategy['ATR'] = Strategy.ATR(self.data,self.inputs.atr)
         # self.strategy['ATR_BB'] = Strategy.ATR_BB(self.data,self.inputs.atr)
-        self.strategy['BB'] = Strategy.BB(self.data,self.inputs.bb)
-        self.strategy['MACD'] = Strategy.MACD(self.data,self.inputs.macd)
-        self.strategy['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.inputs.macd)
-        self.strategy['RSI'] = Strategy.RSI(self.data,self.inputs.rsi)
-        self.strategy['SMA'] = Strategy.SMA(self.data,self.inputs.sma)
+        # self.strategy['BB'] = Strategy.BB(self.data,self.inputs.bb)
+        # self.strategy['MACD'] = Strategy.MACD(self.data,self.inputs.macd)
+        self.strategy['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.inputs.macd_delta)
+        # self.strategy['RSI'] = Strategy.RSI(self.data,self.inputs.rsi)
+        # self.strategy['SMA'] = Strategy.SMA(self.data,self.inputs.sma)
         # self.strategy['SMA_Crossing'] = Strategy.SMA_Crossing(self.data,self.inputs.sma)
 
     def executeOrders(self):
         """EXECUTE ORDERS"""
 
-        self.orders = Orders(self.initialFunds, runNull=True)
+        self.orders = Orders(self.initialFunds)
         
         seekBuy = True
         seekSell = False
@@ -212,33 +216,42 @@ class Backtest:
 
             if seekBuy:
 ############### [USER INPUT]: SET BUY CONSTRAINT
-                if self.strategy['SMA'].buy(i):
+                if self.strategy['MACD_Delta'].buy(i):
                     buy = True
                     seekBuy = False
 
             if seekSell:
 ############### [USER INPUT]: SET BUY CONSTRAINT
-                if self.strategy['SMA'].sell(i):
+                if self.strategy['MACD_Delta'].sell(i):
                     sell = True
                     seekSell = False
 
-                """TRAILING STOP %"""
-                # if (self.data['Close'].iloc[i-1] - orders.buyPrice) / orders.buyPrice < -0.0:
+                # TRAILING STOP %
+                # if (self.data.Close.iloc[i-1] - orders.buyPrice) / orders.buyPrice < -0.0:
                 #     sell = True
                 #     seekSell = False
 
+            # STRATEGY BUY/SELL
             if sell:
-                self.orders.sell(self.data['Open'].iloc[i], date)
+                self.orders.sell(self.data.Open.iloc[i], date)
 
                 sell = False
                 seekBuy = True
             elif buy:
-                self.orders.buy(self.data['Open'].iloc[i], date)
+                self.orders.buy(self.data.Open.iloc[i], date)
 
                 buy = False
                 seekSell = True
             else:
-                self.orders.hold(self.data['Close'].iloc[i], date)
+                self.orders.hold(self.data.Close.iloc[i], date)
+
+            # NULL BUY/SELL
+            if i == 2: # buy
+                self.orders.calcNull(self.data.Close.iloc[i],date,buy=True)
+            elif i == len(self.data) - 1: # sell
+                self.orders.calcNull(self.data.Close.iloc[i],date,sell=True)
+            else: # hold
+                self.orders.calcNull(self.data.Close.iloc[i],date,hold=True)
 
     def executeRetrospective(self):
         """ANALYZE ORDERS"""
@@ -285,6 +298,9 @@ class Backtest:
     #=================================================================#
     
     def setupInputs(self):
+        """ CREATE INPUT COMBINATIONS """
+
+        #  CREATE COMBINATIONS OF INPUTS
         combos = []
         for indicator in self.exploreIndicators:
             obj = getattr(self.inputs,indicator.lower())
@@ -295,26 +311,30 @@ class Backtest:
         combinations = Utility.combinations(combos)
 
 ####### [USER INPUT]: REMOVE NONCOMPLIANT DATA
-        # combinationsCleaned = []
-        # for ind,combo in enumerate(combinations):
-        #     if not combo[1] < combo[0]:
-        #         combinationsCleaned.append(combinations[ind])
-        # combinations = combinationsCleaned
+        # MACD
+        combinationsCleaned = []
+        for ind,combo in enumerate(combinations):
+            if not combo[1] < combo[0]: # slow < fast
+                combinationsCleaned.append(combinations[ind])
+        combinations = combinationsCleaned
 
+        # SET VALUE OF INPUT FIELDS
         unzippedCombinations = list(zip(*combinations))
         self.iters = len(unzippedCombinations[0])
 
         self.exploreInputs = []
-        for i in range(self.iters):
+        for i in range(self.iters): # for each combination
             self.exploreInputs.append(self.Inputs())
 
-            for indicator in self.exploreIndicators:
+            for indicator in self.exploreIndicators: # for each indicator
                 obj = getattr(self.exploreInputs[i],indicator.lower())
 
-                for j,(field,_) in enumerate(obj.__dict__.items()):
+                for j,(field,_) in enumerate(obj.__dict__.items()): # for each field
                     setattr(obj, field, unzippedCombinations[j][i])
 
     def setupExplore(self,ticker,path):
+        """ SETUP AND EXECUTE RUNS """
+
         outdir = 'Files/' + path
         if not os.path.exists(outdir):
             os.mkdir(outdir)
@@ -327,6 +347,8 @@ class Backtest:
 
         # self.outputDf = Utility.obj2df(self.allResults)
         # self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
+
+        # print('here')
 
         # MULTIPLE PROCESSOR
         with Pool(processes=mp.cpu_count()) as pool:
@@ -349,6 +371,8 @@ class Backtest:
             self.outputDf.to_csv('Files/' + path + '/' + ticker + '.csv',index=False)
 
     def exploration(self,segment):
+        """ EXECUTE STRATEGIES """
+
         out = []
 
         for i in range(segment,self.step+segment):
@@ -364,20 +388,17 @@ class Backtest:
             self.executeOrders()
             self.executeRetrospective()
 
+            # SET VALUE FOR EACH FIELD
             indicators = []
             for indicator in self.exploreIndicators:
                 indicators.append(getattr(self.inputs,indicator.lower()))
 
             outputs = self.Outputs(indicators)
+            for indicator in indicators:
+                for att, _ in indicator.__dict__.items():
+                    setattr(outputs.fields,att,getattr(indicator,att))
 
-########### [USER INPUT]: SET FIELDS
-            # outputs.fields.fast = self.inputs.macd.fast
-            # outputs.fields.slow = self.inputs.macd.slow
-            # outputs.fields.sig = self.inputs.macd.sig
-            # outputs.fields.delay = self.inputs.macd.delay
-            outputs.fields.window = self.inputs.sma.window
-            outputs.fields.avgType = self.inputs.sma.avgType
-
+            # SET ANALYSIS VALUES
             outputs.numSell = self.orders.info.numSells
             outputs.exposure = self.orders.info.exposure
             outputs.drawdown = self.orders.info.maxDrawdown
@@ -391,7 +412,7 @@ class Backtest:
     #=================================================================#
 
     def optimize(self):
-        prices = self.data['Smooth']
+        prices = self.data.Smooth
 
         [peaks, troughs] = Utility.findExtrema(list(prices), endsOpt=False)
         extrema = np.asarray(sorted(np.concatenate((peaks, troughs)), key=lambda x: x[0]))
@@ -406,12 +427,12 @@ class Backtest:
             else:
                 if i in extrema[:, 0]:
                     if prices.iloc[i] < prices.iloc[i - 1]:
-                        optOrder.buy(self.data['Open'].iloc[i], date)
+                        optOrder.buy(self.data.Open.iloc[i], date)
                     else:
                         if optOrder.shares > 0:
-                            optOrder.sell(self.data['Open'].iloc[i], date)
+                            optOrder.sell(self.data.Open.iloc[i], date)
                 else:
-                    optOrder.hold(self.data['Close'].iloc[i], date)
+                    optOrder.hold(self.data.Close.iloc[i], date)
 
         optFunds = optOrder.value
         # print('Optimized Funds: $' + '{:,.0f}'.format(optFunds[-1][1]))
@@ -426,6 +447,7 @@ class Backtest:
             self.atr = self.ATR()
             self.bb = self.BB()
             self.macd = self.MACD()
+            self.macd_delta = self.MACD()
             self.rsi = self.RSI()
             self.sma = self.SMA()
 
@@ -445,18 +467,18 @@ class Backtest:
 
         class MACD:
             def __init__(self):
-                self.delay = 1
-                self.fast = 2
-                self.slow = 5
-                self.sig = 3
+                self.delay = 5
+                self.fast = 18
+                self.slow = 11
+                self.sig = 9
 
                 # self.delay = np.arange(1,6)
                 # self.fast = np.arange(2,21,2)
-                # self.slow = np.arange(5,35,4)
-                # self.sig = np.arange(3,19,3)
+                # self.slow = np.arange(5,36,3)
+                # self.sig = np.arange(3,20,2)
 
-                # self.delay = np.arange(1,2)
-                # self.fast = np.arange(2,7)
+                # self.delay = np.arange(1,3)
+                # self.fast = np.arange(2,7,2)
                 # self.slow = np.arange(5,13,4)
                 # self.sig = np.arange(7,15,2)
         
@@ -508,14 +530,14 @@ if __name__ == '__main__':
     import logging, sys
 
     # warnings.filterwarnings("ignore")
-    print('Running...')
     
     # logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     # logging.debug('A debug message!')
 
     backtest = Backtest()
     data = backtest.Data
-    # order = backtest.order
-    # output = backtest.outputsDf
+    figure = backtest.Figure
 
     plt.show()
+
+    # figure['SPY'].show()
