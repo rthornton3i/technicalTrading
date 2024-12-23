@@ -45,7 +45,7 @@ class Fetch:
             Data = self.getPrices()
 
             if writeOpt:
-                with pd.ExcelWriter('data.xlsx') as writer:
+                with pd.ExcelWriter('inputs/data.xlsx') as writer:
                     for ticker in self.tickers:
                         data = Data[ticker]
                         data.to_excel(writer, sheet_name=ticker)
@@ -53,7 +53,7 @@ class Fetch:
             Data = {}
             for ticker in self.tickers:
                 if not fetchOpt:
-                    data = pd.read_excel('Files/data.xlsx', sheet_name=ticker, index_col=0)
+                    data = pd.read_excel('inputs/data.xlsx', sheet_name=ticker, index_col=0)
                     data = data.loc[self.startDate:self.endDate]
                     Data[ticker] = data
 

@@ -1,8 +1,9 @@
 import numpy as np
+from orders import Orders
 
 class Analyze:
 
-    def __init__(self, orders):
+    def __init__(self, orders:Orders):
         self.orders = orders
 
         self.value = self.orders.value

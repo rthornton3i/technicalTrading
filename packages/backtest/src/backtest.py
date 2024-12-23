@@ -18,48 +18,22 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 import warnings
-asdfasdf
-
 
 class Backtest:
 
-    def __init__(self):
-        self.tickers = ['SPY']#['SPY','QQQ','DIA']
+    def __init__(self,tickers,startDate,endDate,initialFunds:float=10000,plotOpt:bool=True):
+        self.tickers = tickers
+        self.startDate = startDate
+        self.endDate = endDate
 
-        # Slow
-        # self.startDate = pd.Timestamp(year=2012,month=4,day=1)
-        # self.endDate   = pd.Timestamp(year=2014,month=3,day=1)
+        self.plotOpt = plotOpt
 
-        # Medium
-        # self.startDate = pd.Timestamp(year=2013,month=8,day=1)
-        # self.endDate   = pd.Timestamp(year=2018,month=1,day=1)
-
-        # Fast
-        # self.startDate = pd.Timestamp(year=2017,month=6,day=1)
-        # self.endDate   = pd.Timestamp(year=2020,month=2,day=1)
-
-        # COVID
-        # self.startDate = pd.Timestamp(year=2019,month=7,day=1)
-        # self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
-
-        # Housing Crisis
-        # self.startDate = pd.Timestamp(year=2007,month=1,day=1)
-        # self.endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
-
-        # Excel
-        self.startDate = pd.Timestamp(year=2013,month=7,day=8)
-        self.endDate = pd.Timestamp(year=2023,month=7,day=7)
-
-        self.initialFunds = 10000
-        self.inputs = self.Inputs()
-
-        self.plotOpt = True
-        self.exploration
-
-        self.run()
+        self.initialFunds = initialFunds
+        self.stratIns = self.StrategyInputs()        
+        
 
     #=================================================================#
-    def run(self, fetchOpt:bool=False, writeOpt:bool=False):
+    def run(self, fetchOpt:bool=False, writeOpt:bool=False) -> None:
         fetch = Fetch(self.tickers,self.startDate,self.endDate)
         Data = fetch.fetch(fetchOpt,writeOpt)
 
@@ -69,7 +43,7 @@ class Backtest:
         for ticker in self.tickers:
             self.data = Data[ticker]                        
 
-            # Figure[ticker] = self.plotStrategy()
+            self.plotStrategy()
 
             tic = time()
 
@@ -99,20 +73,18 @@ class Backtest:
             print('Elapsed time for ' + ticker + ': ' + '{:.2f}'.format(toc) + ' sec')
 
         self.Data = Data
-        self.Figure = Figure
 
 
     #=================================================================#
 
-    def plotStrategy(self):
+    def plotStrategy(self) -> None:
         """SETUP PLOTS"""
 
-        Figure = {}
         ax = None
         plt.close('all')            
 
         if self.plotOpt:
-            Figure['Value'], self.valAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+            _, self.valAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
 
             Utility.setPlot(self.valAxs[0], logscale=False,
                             xlimits=[self.data.index.values[0], self.data.index.values[-1]])
@@ -122,38 +94,36 @@ class Backtest:
                 ax.grid()
                 ax.grid(axis='x', linestyle='--')\
 
-        # if self.plotOpt:
-        #     Figure['Indicators'], self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+        if self.plotOpt:
+            _, self.indAxs = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
 
-        #     ax = self.indAxs[0]
-        #     Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
+            ax = self.indAxs[0]
+            Utility.setPlot(ax, logscale=False, xlimits=[self.data.index.values[0], self.data.index.values[-1]])
 
-        #     ax.set_title('Price')
-        #     ax.plot(self.data.Close, linewidth=0.5)
-        #     # ax.plot(self.data.Smooth,color='black',linewidth=1)
+            ax.set_title('Price')
+            ax.plot(self.data.Close, linewidth=0.5)
+            # ax.plot(self.data.Smooth,color='black',linewidth=1)
             
-        #     ax.legend()
+            ax.legend('Close')
 
-        #     ax = self.indAxs[1]
-        #     Utility.setPlot(ax)
+            ax = self.indAxs[1]
+            Utility.setPlot(ax)
 
-        #     ax = self.indAxs[2]
-        #     Utility.setPlot(ax)
-
-        return Figure
+            ax = self.indAxs[2]
+            Utility.setPlot(ax)
 
     #=================================================================#
     
     def executeIndicators(self):
         """EXECUTE INDICATORS FOR STRATEGY"""
-        macd = self.inputs.macd_delta
-        atr = self.inputs.atr
-        sma = self.inputs.sma
+        macd = self.stratIns.macd_delta
+        atr = self.stratIns.atr
+        sma = self.stratIns.sma
 
         # self.data['Smooth'] = Utility.smooth(list(self.data.Close), avgType='simple', window=5, iterations=1)
         # self.data['Regression'] = Indicators.regression(self.data.Close, curveType='logarithmic')
 
-        # self.data['MACD'] = Indicators.macd(self.data,fast=macd.fast,slow=macd.slow,sig=macd.sig,avgType='simple')
+        self.data['MACD'] = Indicators.macd(self.data,fast=macd.fast,slow=macd.slow,sig=macd.sig,avgType='simple')
         # self.data['ATR'] = Indicators.atr(self.data,window=atr.window,avgType='exponential')
         # self.data['SMA'] = Indicators.movingAverage(self.data,window=sma.window,avgType=sma.avgType,steepness=2,outputAll=True,colors=('tab:green'),ax=self.indAxs[1],plotOpt=self.plotOpt)
         # self.data['BB'] = Indicators.bollingerBands(self.data,window=20)
@@ -183,7 +153,7 @@ class Backtest:
         # self.strategy['ATR_BB'] = Strategy.ATR_BB(self.data,self.inputs.atr)
         # self.strategy['BB'] = Strategy.BB(self.data,self.inputs.bb)
         # self.strategy['MACD'] = Strategy.MACD(self.data,self.inputs.macd)
-        self.strategy['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.inputs.macd_delta)
+        self.strategy['MACD_Delta'] = Strategy.MACD_Delta(self.data,self.stratIns.macd_delta)
         # self.strategy['RSI'] = Strategy.RSI(self.data,self.inputs.rsi)
         # self.strategy['SMA'] = Strategy.SMA(self.data,self.inputs.sma)
         # self.strategy['SMA_Crossing'] = Strategy.SMA_Crossing(self.data,self.inputs.sma)
@@ -290,7 +260,7 @@ class Backtest:
         #  CREATE COMBINATIONS OF INPUTS
         combos = []
         for indicator in self.exploreIndicators:
-            obj = getattr(self.inputs,indicator.lower())
+            obj = getattr(self.stratIns,indicator.lower())
 
             for field,_ in obj.__dict__.items():
                 combos.append(getattr(obj,field))
@@ -311,7 +281,7 @@ class Backtest:
 
         self.exploreInputs = []
         for i in range(self.iters): # for each combination
-            self.exploreInputs.append(self.Inputs())
+            self.exploreInputs.append(self.StrategyInputs())
 
             for indicator in self.exploreIndicators: # for each indicator
                 obj = getattr(self.exploreInputs[i],indicator.lower())
@@ -326,7 +296,7 @@ class Backtest:
         if not os.path.exists(outdir):
             os.mkdir(outdir)
 
-        self.inputs = []
+        self.stratIns = []
 
         # SINGLE PROCESSOR
         # self.step = self.iters
@@ -368,7 +338,7 @@ class Backtest:
             if i >= self.iters:
                 break
 
-            self.inputs = self.exploreInputs[i]
+            self.stratIns = self.exploreInputs[i]
 
             self.executeIndicators()
             self.executeStrategy()
@@ -378,7 +348,7 @@ class Backtest:
             # SET VALUE FOR EACH FIELD
             indicators = []
             for indicator in self.exploreIndicators:
-                indicators.append(getattr(self.inputs,indicator.lower()))
+                indicators.append(getattr(self.stratIns,indicator.lower()))
 
             outputs = self.Outputs(indicators)
             for indicator in indicators:
@@ -434,7 +404,7 @@ class Backtest:
     #=================================================================#
     #=================================================================#
     
-    class Inputs:
+    class StrategyInputs:
         def __init__(self):
             self.atr = self.ATR()
             self.bb = self.BB()
