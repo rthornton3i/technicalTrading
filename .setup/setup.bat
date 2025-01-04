@@ -1,6 +1,6 @@
 python -m venv .venv
 call .venv/Scripts/activate.bat
-python -m pip install --upgrade pip -r .setup/requirements.pip.txt
+python -m pip install --upgrade pip
 pip install -r .setup/requirements.txt
 
 pip install -e packages/analyze
