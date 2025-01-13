@@ -2,7 +2,7 @@ from utility import Utility
 from orders import Orders
 from analyze import Analyze
 from strategy import Strategy
-from fetch import Fetch
+from fetch import Fetch_Alpha
 from indicators import Indicators
 
 import numpy as np
@@ -34,7 +34,7 @@ class Backtest:
 
     #=================================================================#
     def run(self, fetchOpt:bool=False, writeOpt:bool=False) -> None:
-        fetch = Fetch(self.tickers,self.startDate,self.endDate)
+        fetch = Fetch_Alpha(self.tickers,self.startDate,self.endDate)
         Data = fetch.fetch(fetchOpt,writeOpt)
 
         #=================================================================#

@@ -6,4 +6,5 @@ matplotlib
 openpyxl
 scipy
 alpha-vantage
+polygon-api-client
 torch
