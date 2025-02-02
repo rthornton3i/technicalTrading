@@ -2,14 +2,14 @@ from utility import Utility
 from orders import Orders
 from analyze import Analyze
 from strategy import Strategy
-from fetch import Fetch_Alpha
+from fetch import Fetch_Alpha,Fetch_Polygon
 from indicators import Indicators
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from datetime import datetime as dt
+
 from time import time
 # import math
 import os

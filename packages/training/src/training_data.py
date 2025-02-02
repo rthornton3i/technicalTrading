@@ -8,12 +8,14 @@ from utility import Utility
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random as rand
 
-from datetime import datetime as dt
+from datetime import datetime,timedelta
 
 from typing import Optional,Any
+from pandas import DataFrame
 
-def trainingData(data,minHold:Optional[int]=None,minDelta:Optional[float]=None):
+def trainingData(data:DataFrame,minHold:Optional[int]=None,minDelta:Optional[float]=None):
     def deleteIndex(index,*arrs):
         newArrs = []
         for arr in arrs:
@@ -122,45 +124,56 @@ def trainingData(data,minHold:Optional[int]=None,minDelta:Optional[float]=None):
 
     return buy,sell,dates,prices
 
-""" SET TIMEFRAME AND FETCH """
-startDate = pd.Timestamp(year=dt.now().year-1,month=dt.now().month,day=dt.now().day)
-startDateWk = pd.Timestamp(year=dt.now().year-3,month=dt.now().month,day=dt.now().day)
-startDateMth = pd.Timestamp(year=dt.now().year-5,month=dt.now().month,day=dt.now().day)
+def getHistoricalData(ticker:str,endDate:datetime) -> DataFrame:
+    """ SET TIMEFRAME AND FETCH """
+    startDate = pd.Timestamp(year=endDate.year-1,month=endDate.month,day=endDate.day)
+    startDateWk = pd.Timestamp(year=endDate.year-3,month=endDate.month,day=endDate.day)
+    startDateMth = pd.Timestamp(year=endDate.year-5,month=endDate.month,day=endDate.day)
 
-tickers = ['VTI']
+    stockFetch = Fetch_Alpha([ticker], startDate)
+    dataDay = stockFetch.fetch()[ticker]
 
-stockFetch = Fetch_Alpha(tickers, startDate)
-dataDay = stockFetch.getPrices()[tickers[0]]
+    # CHANGE getPrices #######################
+    stockFetch.startDate = startDateWk
+    dataWk = stockFetch.getPrices(increment='weekly')[ticker]
+    dataWk = dataWk[dataWk.index < startDate]
 
-stockFetch.startDate = startDateWk
-dataWk = stockFetch.getPrices(increment='weekly')[tickers[0]]
-dataWk = dataWk[dataWk.index < startDate]
+    stockFetch.startDate = startDateMth
+    dataMth = stockFetch.getPrices(increment='monthly')[ticker]
+    dataMth = dataMth[dataMth.index < startDateWk]
 
-stockFetch.startDate = startDateMth
-dataMth = stockFetch.getPrices(increment='monthly')[tickers[0]]
-dataMth = dataMth[dataMth.index < startDateWk]
+    data = pd.concat((dataMth,dataWk,dataDay))
 
-data = pd.concat((dataMth,dataWk,dataDay))
+    return data
 
-# data = Data[tickers[0]]
-data['Smooth'] = Utility.smooth(list(data.Close),avgType='simple',window=5,iterations=5)
+def plotData(data:DataFrame):
+    """ PLOT """
+    xvals = np.arange(len(data))
+
+    ax:list[plt.Axes]
+    _, ax = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+
+    ax[0].plot(data.index.values,xvals,data.Close,linewidatetimeh=0.5)
+    ax[0].plot(data.index.values,xvals,data.Smooth,color='black',linewidatetimeh=1)
+    ax[0].scatter(data.index.values[dates[0]],prices[0],c='g')
+    ax[0].scatter(data.index.values[dates[1]],prices[1],c='r')
+
+    ax[1].scatter(data.index.values,buy,c=buy,cmap='RdYlGn')
+    # ax2.plot(xvals,sell,color='red')
+    ax[1].set_ylim(-5,5)
+
+    plt.show()
 
 """ SET TRAINING DATA """
-buy,sell,dates,prices = trainingData(data)#,minDelta=0.05)
+maxEndDate = datetime.fromisoformat('2025-01-26')
+maxDaysBack = 15*365
+sampleDays = np.arange(maxDaysBack)
+rand.shuffle(sampleDays)
 
-""" PLOT """
-xvals = np.arange(len(data))
+for d in sampleDays[:100]:
+    data = getHistoricalData('SPY',maxEndDate)
+    data['Smooth'] = Utility.smooth(list(data.Close),avgType='simple',window=5,iterations=5)
 
-ax:list[plt.Axes]
-_, ax = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+    buy,sell,dates,prices = trainingData(data)#,minDelta=0.05)
 
-ax[0].plot(data.index.values,xvals,data.Close,linewidth=0.5)
-ax[0].plot(data.index.values,xvals,data.Smooth,color='black',linewidth=1)
-ax[0].scatter(data.index.values[dates[0]],prices[0],c='g')
-ax[0].scatter(data.index.values[dates[1]],prices[1],c='r')
-
-ax[1].scatter(data.index.values,buy,c=buy,cmap='RdYlGn')
-# ax2.plot(xvals,sell,color='red')
-ax[1].set_ylim(-5,5)
-
-plt.show()
+    plotData(data)

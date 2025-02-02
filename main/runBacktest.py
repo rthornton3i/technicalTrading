@@ -1,5 +1,7 @@
 from backtest import Backtest
 
+from datetime import datetime as dt
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -26,8 +28,8 @@ tickers = ['SPY']#['SPY','QQQ','DIA']
 # endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
 
 # Excel
-startDate = pd.Timestamp(year=2013,month=7,day=8)
-endDate = pd.Timestamp(year=2023,month=7,day=7)
+startDate = pd.Timestamp(year=dt.now().year-20,month=dt.now().month,day=dt.now().day)
+endDate = pd.Timestamp(year=dt.now().year,month=dt.now().month,day=dt.now().day)
 
 initialFunds = 10000
 

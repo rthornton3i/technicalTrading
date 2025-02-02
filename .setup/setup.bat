@@ -7,3 +7,4 @@ pip install -e packages/analyze
 pip install -e packages/fetch
 pip install -e packages/utility
 pip install -e packages/backtest
+pip install -e packages/training

@@ -8,3 +8,4 @@ scipy
 alpha-vantage
 polygon-api-client
 torch
+ib-insync
